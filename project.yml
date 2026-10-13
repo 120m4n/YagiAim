@@ -16,7 +16,7 @@ targets:
     info:
       path: YagiAim/Info.plist
       properties:
-        CFBundleDisplayName: YagiAim
+        CFBundleDisplayName: MeshAzimuth
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
@@ -24,12 +24,13 @@ targets:
         UIRequiredDeviceCapabilities: [magnetometer, location-services, gps]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSLocationWhenInUseUsageDescription: >-
-          YagiAim usa tu ubicación para calcular el azimut y la distancia
+          MeshAzimuth usa tu ubicación para calcular el azimut y la distancia
           hacia el repetidor MeshCore.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.electrosoftware.yagiaim
         TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   YagiAimTests:
     type: bundle.unit-test
     platform: iOS

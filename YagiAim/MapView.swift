@@ -68,6 +68,7 @@ struct MapView: UIViewRepresentable {
         map.addGestureRecognizer(tap)
 
         let track = MKUserTrackingButton(mapView: map)
+        track.tintColor = Theme.accentUI
         let compass = MKCompassButton(mapView: map)
         compass.compassVisibility = .adaptive
         let scale = MKScaleView(mapView: map)
@@ -102,6 +103,7 @@ struct MapView: UIViewRepresentable {
                 let t = CachedTileOverlay()
                 c.tiles = t
                 map.addOverlay(t, level: .aboveLabels)
+                c.lineSig = [] // la línea debe quedar encima de las teselas: se vuelve a añadir
             }
         }
 
@@ -116,11 +118,15 @@ struct MapView: UIViewRepresentable {
         let lineSig = [me?.latitude, me?.longitude, target?.latitude, target?.longitude]
         if lineSig != c.lineSig {
             c.lineSig = lineSig
-            if let l = c.line { map.removeOverlay(l); c.line = nil }
+            map.removeOverlays(c.line)
+            c.line = []
             if let me, let target {
-                let l = MKPolyline(coordinates: [me, target], count: 2)
-                c.line = l
-                map.addOverlay(l)
+                // Contorno blanco + trazo naranja: visible sobre satélite y sobre OSM.
+                let casing = MKPolyline(coordinates: [me, target], count: 2)
+                casing.title = "casing"
+                let line = MKPolyline(coordinates: [me, target], count: 2)
+                c.line = [casing, line]
+                map.addOverlays(c.line, level: .aboveLabels)
             }
         }
     }
@@ -128,7 +134,7 @@ struct MapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelegate {
         var parent: MapView
         var tiles: CachedTileOverlay?
-        var line: MKPolyline?
+        var line: [MKPolyline] = []
         var annotationSig: [String] = []
         var lineSig: [Double?] = []
 
@@ -151,9 +157,16 @@ struct MapView: UIViewRepresentable {
         func mapView(_ map: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let t = overlay as? MKTileOverlay { return MKTileOverlayRenderer(tileOverlay: t) }
             let r = MKPolylineRenderer(overlay: overlay)
-            r.strokeColor = .systemOrange
-            r.lineWidth = 3
-            r.lineDashPattern = [8, 6]
+            if overlay.title == "casing" {
+                r.lineCap = .round
+                r.strokeColor = UIColor.white.withAlphaComponent(0.95)
+                r.lineWidth = 8
+            } else {
+                r.strokeColor = Theme.targetUI
+                r.lineWidth = 4
+                r.lineCap = .butt
+                r.lineDashPattern = [12, 8]
+            }
             return r
         }
 
@@ -161,7 +174,8 @@ struct MapView: UIViewRepresentable {
             guard let a = annotation as? RepeaterAnnotation else { return nil }
             let v = MKMarkerAnnotationView(annotation: a, reuseIdentifier: "repeater")
             v.glyphImage = UIImage(systemName: "antenna.radiowaves.left.and.right")
-            v.markerTintColor = a.isSelected ? .systemOrange : .systemGray
+            v.markerTintColor = a.isSelected ? Theme.targetUI : Theme.accentUI
+            v.glyphTintColor = .white
             return v
         }
 

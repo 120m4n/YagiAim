@@ -10,6 +10,7 @@ struct YagiAimApp: App {
             ContentView()
                 .environment(location)
                 .environment(store)
+                .tint(Theme.accent)
         }
     }
 }

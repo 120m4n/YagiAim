@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var pendingCoordinate: CLLocationCoordinate2D?
     @State private var showList = false
     @State private var showAimer = false
+    @State private var showAbout = false
     @AppStorage("map.satellite") private var mapStyleSatellite = false
 
     private static let cameraKey = "map.camera"
@@ -60,13 +61,17 @@ struct ContentView: View {
             }
             .navigationTitle("YagiAim")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Theme.navy, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { mapStyleSatellite.toggle() } label: {
                         Image(systemName: mapStyleSatellite ? "map" : "globe.americas")
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button { showAbout = true } label: { Image(systemName: "info.circle") }
                     Button { showList = true } label: { Image(systemName: "list.bullet") }
                 }
             }
@@ -81,6 +86,7 @@ struct ContentView: View {
                 ), isNew: true)
             }
             .sheet(isPresented: $showList) { RepeaterList() }
+            .sheet(isPresented: $showAbout) { AboutView() }
             .fullScreenCover(isPresented: $showAimer) { AimView() }
         }
         .onAppear { loc.start() }
@@ -99,7 +105,7 @@ struct ContentView: View {
                             Text(String(format: "Azimut %.1f° %@", info.bearing, Geo.cardinal(info.bearing)))
                                 .font(.title3.monospacedDigit().bold())
                             Text(info.distanceText + (loc.isCachedLocation ? " · ubicación anterior" : ""))
-                                .font(.subheadline).foregroundStyle(.secondary)
+                                .font(.subheadline).foregroundStyle(Theme.accent)
                         } else {
                             Text("Esperando GPS…").foregroundStyle(.secondary)
                         }
@@ -108,7 +114,9 @@ struct ContentView: View {
                     Image(systemName: "chevron.right").foregroundStyle(.secondary)
                 }
                 .padding()
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+                .background(Theme.navy.opacity(0.94), in: RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.accent.opacity(0.5), lineWidth: 1))
+                .environment(\.colorScheme, .dark)
             }
             .buttonStyle(.plain)
             .padding(.horizontal)
@@ -116,7 +124,9 @@ struct ContentView: View {
             Text("Toca el mapa donde está el repetidor MeshCore")
                 .font(.subheadline)
                 .padding(12)
-                .background(.regularMaterial, in: Capsule())
+                .foregroundStyle(.white)
+                .background(Theme.navy.opacity(0.94), in: Capsule())
+                .overlay(Capsule().stroke(Theme.accent.opacity(0.5), lineWidth: 1))
                 .padding(.bottom, 8)
         }
     }
@@ -187,7 +197,7 @@ struct AimView: View {
 
                     if loc.usingMagneticFallback {
                         Label("Usando norte magnético (sin GPS). Declinación no corregida.", systemImage: "exclamationmark.triangle")
-                            .font(.footnote).foregroundStyle(.orange)
+                            .font(.footnote).foregroundStyle(Theme.target)
                     }
 
                     VStack(alignment: .leading) {
@@ -226,7 +236,7 @@ struct AimView: View {
                 Label(String(format: "Gira %.0f°", abs(d)),
                       systemImage: d > 0 ? "arrow.clockwise" : "arrow.counterclockwise")
                     .font(.largeTitle.bold().monospacedDigit())
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.target)
                     .contentTransition(.numericText())
             }
         } else {
@@ -265,7 +275,7 @@ struct RepeaterList: View {
                             }
                             Spacer()
                             if r.id == store.selectedID {
-                                Image(systemName: "checkmark").foregroundStyle(.orange)
+                                Image(systemName: "checkmark").foregroundStyle(Theme.target)
                             }
                         }
                     }

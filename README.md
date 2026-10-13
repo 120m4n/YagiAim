@@ -1,6 +1,6 @@
-# YagiAim
+# MeshAzimuth
 
-App iOS (SwiftUI, iOS 17+) para orientar una antena Yagi-Uda hacia un repetidor MeshCore.
+MeshAzimuth (antes YagiAim) es una app iOS (SwiftUI, iOS 17+) para orientar una antena Yagi-Uda hacia un repetidor MeshCore.
 
 - Toca el mapa (satélite/estándar) para marcar el repetidor; se guardan varios con nombre y altitud opcional.
 - Calcula **azimut verdadero** (círculo máximo), distancia y, si das la altitud, **elevación** con corrección de curvatura k = 4/3.

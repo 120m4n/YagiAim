@@ -28,7 +28,7 @@ struct CompassView: View {
 
                 if let delta {
                     Needle()
-                        .fill(aligned ? Color.green : Color.orange)
+                        .fill(aligned ? Color.green : Theme.target)
                         .frame(width: size * 0.07, height: size * 0.42)
                         .offset(y: -size * 0.21)
                         .rotationEffect(.degrees(delta))
