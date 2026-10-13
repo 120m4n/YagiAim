@@ -6,59 +6,46 @@ struct ContentView: View {
     @Environment(LocationManager.self) private var loc
     @Environment(RepeaterStore.self) private var store
 
-    @State private var camera: MapCameraPosition = Self.savedCamera()
     @State private var net = NetworkMonitor()
     @State private var pendingCoordinate: CLLocationCoordinate2D?
     @State private var showList = false
     @State private var showAimer = false
-    @AppStorage("map.satellite") private var mapStyleSatellite = true
+    @AppStorage("map.satellite") private var mapStyleSatellite = false
 
     private static let cameraKey = "map.camera"
 
-    /// Última región vista; si no hay, sigue al usuario.
-    private static func savedCamera() -> MapCameraPosition {
+    /// Última región vista; nil = seguir al usuario.
+    private static func savedRegion() -> MKCoordinateRegion? {
         guard let d = UserDefaults.standard.array(forKey: cameraKey) as? [Double], d.count == 4,
-              abs(d[0]) <= 90, abs(d[1]) <= 180, d[2] > 0, d[3] > 0 else {
-            return .userLocation(fallback: .automatic)
-        }
-        return .region(.init(center: .init(latitude: d[0], longitude: d[1]),
-                             span: .init(latitudeDelta: d[2], longitudeDelta: d[3])))
+              abs(d[0]) <= 90, abs(d[1]) <= 180, d[2] > 0, d[3] > 0 else { return nil }
+        return .init(center: .init(latitude: d[0], longitude: d[1]),
+                     span: .init(latitudeDelta: d[2], longitudeDelta: d[3]))
     }
 
     var body: some View {
         NavigationStack {
-            MapReader { proxy in
-                Map(position: $camera) {
-                    UserAnnotation()
-                    ForEach(store.repeaters) { r in
-                        Annotation(r.name, coordinate: r.coordinate) {
-                            Image(systemName: "antenna.radiowaves.left.and.right")
-                                .font(.title3)
-                                .padding(6)
-                                .background(r.id == store.selectedID ? Color.orange : Color.gray, in: Circle())
-                                .foregroundStyle(.white)
-                                .onTapGesture { store.selectedID = r.id }
-                        }
-                    }
-                    if let me = loc.location?.coordinate, let r = store.selected {
-                        MapPolyline(coordinates: [me, r.coordinate])
-                            .stroke(.orange, style: StrokeStyle(lineWidth: 3, dash: [8, 6]))
-                    }
-                }
-                .mapStyle(mapStyleSatellite ? .hybrid(elevation: .realistic) : .standard(elevation: .realistic))
-                .mapControls {
-                    MapUserLocationButton()
-                    MapCompass()
-                    MapScaleView()
-                }
-                .onMapCameraChange(frequency: .onEnd) { ctx in
-                    let r = ctx.region
+            MapView(
+                repeaters: store.repeaters,
+                selectedID: store.selectedID,
+                me: loc.location?.coordinate,
+                satellite: mapStyleSatellite,
+                initialRegion: Self.savedRegion(),
+                onSelect: { store.selectedID = $0 },
+                onTap: { pendingCoordinate = $0 },
+                onRegionChange: { r in
                     UserDefaults.standard.set([r.center.latitude, r.center.longitude,
                                                r.span.latitudeDelta, r.span.longitudeDelta],
                                               forKey: Self.cameraKey)
                 }
-                .onTapGesture { point in
-                    if let c = proxy.convert(point, from: .local) { pendingCoordinate = c }
+            )
+            .ignoresSafeArea(edges: .bottom)
+            .overlay(alignment: .bottomLeading) {
+                if !mapStyleSatellite {
+                    Text("© OpenStreetMap contributors")
+                        .font(.caption2)
+                        .padding(4)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 4))
+                        .padding(6)
                 }
             }
             .safeAreaInset(edge: .bottom) { bottomPanel }

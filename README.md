@@ -12,7 +12,7 @@ App iOS (SwiftUI, iOS 17+) para orientar una antena Yagi-Uda hacia un repetidor 
 
 - Se conservan: repetidores y selección, tolerancia, estilo del mapa (satélite/estándar) y la última región vista.
 - Se guarda la última ubicación: al abrir, azimut y distancia aparecen al instante con la etiqueta «ubicación anterior» hasta que llega un fix GPS nuevo.
-- Sin red se muestra un aviso. El mapa de fondo (MapKit) aún depende de la conexión; el mapa offline con teselas propias está pendiente (Fase 2).
+- Sin red se muestra un aviso. El mapa estándar usa teselas OSM con caché pasiva en disco (hasta 500 MB): solo queda guardado lo que se ha visto, así que recorre la zona con red antes de ir a campo. El satélite (Apple) requiere conexión.
 
 ## Compilar
 
@@ -38,6 +38,7 @@ Selecciona tu equipo de firma y ejecútalo en un iPhone físico (el simulador no
 |---|---|
 | `Geo.swift` | Azimut, haversine, elevación, delta con signo |
 | `LocationManager.swift` | GPS + rumbo verdadero suavizado, última ubicación persistida |
+| `MapView.swift` | MKMapView con teselas OSM en caché, anotaciones y toques |
 | `NetworkMonitor.swift` | Estado de conectividad (aviso sin red) |
 | `RepeaterStore.swift` | Repetidores persistidos en UserDefaults |
 | `CompassView.swift` | Brújula SwiftUI con háptica |
