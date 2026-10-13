@@ -32,15 +32,34 @@ Selecciona tu equipo de firma y ejecútalo en un iPhone físico (el simulador no
 3. Aléjalo de mástiles metálicos, el coaxial y el imán del rotor: desvían el magnetómetro varios grados.
 4. Con el haz de una Yagi de 3 elementos (~60–70° a −3 dB), ±3° es más que suficiente; ajusta el último tramo por RSSI/SNR del companion.
 
+## Funciones
+
+- **Alineación con histéresis:** entra a ±tolerancia y sale a ±(tolerancia + 2°); vibra 3 s al alinear.
+- **Calibración del boom:** corrige la desalineación teléfono–boom apuntando la Yagi a un objetivo conocido.
+- **Inclinación:** con Core Motion compara el pitch del boom con la elevación calculada («Sube/Baja X°»).
+- **Repetidores:** búsqueda, orden por cercanía, distancia y azimut por fila, importar/exportar JSON.
+- **Mapa:** teselas OSM con caché pasiva (se gestiona en *Acerca de*) o satélite de Apple.
+- **Guía de uso** en el primer arranque y aviso cuando el permiso de ubicación está denegado.
+
+Ver [PRIVACY.md](PRIVACY.md) para la política de privacidad.
+
 ## Estructura
 
 | Archivo | Rol |
 |---|---|
-| `Geo.swift` | Azimut, haversine, elevación, delta con signo |
-| `LocationManager.swift` | GPS + rumbo verdadero suavizado, última ubicación persistida |
-| `MapView.swift` | MKMapView con teselas OSM en caché, anotaciones y toques |
-| `NetworkMonitor.swift` | Estado de conectividad (aviso sin red) |
+| `YagiAimApp.swift` | Punto de entrada e inyección de dependencias |
+| `ContentView.swift` | Mapa y panel inferior |
+| `AimView.swift` / `AimInfo.swift` | Pantalla de apuntamiento y cálculo de azimut/distancia/elevación |
+| `RepeaterViews.swift` | Lista (búsqueda, orden, import/export) y editor de repetidores |
 | `RepeaterStore.swift` | Repetidores persistidos en UserDefaults |
-| `CompassView.swift` | Brújula SwiftUI |
-| `Haptics.swift` | Vibración sostenida (3 s) al alinear, con Core Haptics |
-| `ContentView.swift` | Mapa, panel inferior, pantalla de apuntamiento, editor |
+| `CompassView.swift` | Brújula SwiftUI con histéresis y háptica |
+| `Haptics.swift` | Vibración sostenida (3 s) con Core Haptics |
+| `LocationManager.swift` | GPS, rumbo verdadero suavizado, offset de calibración, última ubicación |
+| `MotionManager.swift` | Inclinación del boom (Core Motion) |
+| `MapView.swift` | MKMapView con teselas OSM en caché, anotaciones y toques |
+| `NetworkMonitor.swift` / `PermissionBanner.swift` | Aviso sin red / sin permiso de ubicación |
+| `AboutView.swift` / `OnboardingView.swift` | Acerca de (versión, caché, desarrollador) y guía de uso |
+| `Theme.swift` | Paleta de colores |
+| `Geo.swift` | Azimut, haversine, elevación, delta con signo, histéresis |
+| `PrivacyInfo.xcprivacy` | Manifiesto de privacidad de Apple |
+| `design/` | Logo original y capturas de referencia |
