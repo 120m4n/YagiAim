@@ -5,9 +5,11 @@ import SwiftUI
 /// Con red usa la política HTTP normal (revalida al expirar); sin red sirve
 /// lo guardado aunque esté vencido. No hay prefetch (lo prohíbe la política OSM).
 final class CachedTileOverlay: MKTileOverlay {
+    static let cache = URLCache(memoryCapacity: 20_000_000, diskCapacity: 500_000_000)
+
     private static let session: URLSession = {
         let c = URLSessionConfiguration.default
-        c.urlCache = URLCache(memoryCapacity: 20_000_000, diskCapacity: 500_000_000)
+        c.urlCache = cache
         c.httpAdditionalHeaders = ["User-Agent": "YagiAim/1.0 (co.electrosoftware.yagiaim)"]
         return URLSession(configuration: c)
     }()

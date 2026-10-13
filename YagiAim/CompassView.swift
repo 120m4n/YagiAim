@@ -6,12 +6,19 @@ struct CompassView: View {
     let heading: Double?      // rumbo actual del teléfono (verdadero)
     let target: Double?       // azimut al repetidor
     var tolerance: Double = 3 // ° para considerar "alineado"
+    var onAlignedChange: (Bool) -> Void = { _ in }
+
+    @State private var aligned = false
 
     private var delta: Double? {
         guard let heading, let target else { return nil }
         return Geo.signedDelta(target: target, current: heading)
     }
-    private var aligned: Bool { (delta.map { abs($0) <= tolerance }) ?? false }
+
+    private func updateAligned() {
+        let now = Geo.isAligned(delta: delta, tolerance: tolerance, wasAligned: aligned)
+        if now != aligned { aligned = now }
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -46,7 +53,10 @@ struct CompassView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .aspectRatio(1, contentMode: .fit)
+        .onChange(of: delta, initial: true) { updateAligned() }
+        .onChange(of: tolerance) { updateAligned() }
         .onChange(of: aligned) { _, isAligned in
+            onAlignedChange(isAligned)
             if isAligned { Haptics.shared.startAligned() } else { Haptics.shared.stop() }
         }
         .accessibilityElement()

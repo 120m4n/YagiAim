@@ -53,6 +53,20 @@ final class RepeaterStore {
         if selectedID == r.id { selectedID = repeaters.first?.id }
     }
 
+    /// Fusiona una lista importada: omite inválidos y duplicados (mismo id, o mismo nombre y coordenadas).
+    @discardableResult
+    func merge(_ list: [Repeater]) -> (added: Int, skipped: Int) {
+        var added = 0
+        for r in list {
+            let valid = !r.name.isEmpty && abs(r.latitude) <= 90 && abs(r.longitude) <= 180
+            let dup = repeaters.contains {
+                $0.id == r.id || ($0.name == r.name && $0.latitude == r.latitude && $0.longitude == r.longitude)
+            }
+            if valid && !dup { repeaters.append(r); added += 1 }
+        }
+        return (added, list.count - added)
+    }
+
     private func save() {
         if let data = try? JSONEncoder().encode(repeaters) {
             UserDefaults.standard.set(data, forKey: key)

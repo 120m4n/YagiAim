@@ -39,6 +39,13 @@ enum Geo {
         return d
     }
 
+    /// Histéresis: entra a ±tolerancia y solo sale a ±(tolerancia + margen), para que
+    /// el verde y la vibración no parpadeen cuando el rumbo oscila en el borde.
+    static func isAligned(delta: Double?, tolerance: Double, wasAligned: Bool, exitMargin: Double = 2) -> Bool {
+        guard let delta else { return false }
+        return abs(delta) <= (wasAligned ? tolerance + exitMargin : tolerance)
+    }
+
     static func normalize(_ deg: Double) -> Double {
         let r = deg.truncatingRemainder(dividingBy: 360)
         return r < 0 ? r + 360 : r

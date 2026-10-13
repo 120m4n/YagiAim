@@ -10,8 +10,15 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
 
     var location: CLLocation?
-    /// Rumbo verdadero suavizado (0–360). nil si no hay brújula o sin calibrar.
-    var heading: Double?
+    /// Rumbo verdadero suavizado, sin offset (0–360). nil si no hay brújula o sin calibrar.
+    private(set) var rawHeading: Double?
+    /// Corrección (°) por desalineación entre el eje del teléfono y el boom. Se calibra apuntando
+    /// la Yagi a un objetivo conocido.
+    var headingOffset: Double = UserDefaults.standard.double(forKey: "boom.offset") {
+        didSet { UserDefaults.standard.set(headingOffset, forKey: "boom.offset") }
+    }
+    /// Rumbo del boom: rumbo del teléfono + offset de calibración.
+    var heading: Double? { rawHeading.map { Geo.normalize($0 + headingOffset) } }
     /// Precisión reportada por iOS en grados (menor = mejor; < 0 = inválido).
     var headingAccuracy: Double = -1
     var authorization: CLAuthorizationStatus = .notDetermined
@@ -63,6 +70,12 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         if CLLocationManager.headingAvailable() {
             manager.startUpdatingHeading()
         }
+    }
+
+    /// Fija el offset para que el rumbo actual coincida con `bearing` (la Yagi ya apunta al objetivo).
+    func calibrate(toBearing bearing: Double) {
+        guard let raw = rawHeading else { return }
+        headingOffset = Geo.signedDelta(target: bearing, current: raw)
     }
 
     func stop() {
@@ -121,7 +134,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         } else {
             smoothedSin = s; smoothedCos = c; hasSample = true
         }
-        heading = Geo.normalize(atan2(smoothedSin, smoothedCos).deg)
+        rawHeading = Geo.normalize(atan2(smoothedSin, smoothedCos).deg)
     }
 
     func locationManagerShouldDisplayHeadingCalibration(_ m: CLLocationManager) -> Bool {

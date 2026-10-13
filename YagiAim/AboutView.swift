@@ -3,6 +3,9 @@ import SwiftUI
 /// Acerca de: versión, desarrollador y proyectos relacionados.
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var cacheBytes = CachedTileOverlay.cache.currentDiskUsage
+    @State private var confirmClear = false
+    @State private var showGuide = false
 
     private var appName: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "YagiAim"
@@ -31,6 +34,15 @@ struct AboutView: View {
 
                 Section("Aplicación") {
                     LabeledContent("Versión", value: version)
+                    Button { showGuide = true } label: { Label("Ver guía de uso", systemImage: "questionmark.circle") }
+                }
+
+                Section {
+                    LabeledContent("Caché de mapas",
+                                   value: ByteCountFormatter.string(fromByteCount: Int64(cacheBytes), countStyle: .file))
+                    Button("Borrar caché de mapas", role: .destructive) { confirmClear = true }
+                } header: { Text("Almacenamiento") } footer: {
+                    Text("Guarda solo las teselas que has visto (máx. 500 MB). Para usar una zona sin red, recórrela antes con conexión.")
                 }
 
                 Section("Desarrollador") {
@@ -53,6 +65,13 @@ struct AboutView: View {
             .navigationTitle("Acerca de")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Listo") { dismiss() } } }
+            .fullScreenCover(isPresented: $showGuide) { OnboardingView() }
+            .confirmationDialog("¿Borrar la caché de mapas?", isPresented: $confirmClear, titleVisibility: .visible) {
+                Button("Borrar", role: .destructive) {
+                    CachedTileOverlay.cache.removeAllCachedResponses()
+                    cacheBytes = CachedTileOverlay.cache.currentDiskUsage
+                }
+            }
         }
     }
 }

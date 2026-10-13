@@ -31,4 +31,13 @@ final class GeoTests: XCTestCase {
         XCTAssertEqual(Geo.cardinal(359), "N")
         XCTAssertEqual(Geo.cardinal(225), "SO")
     }
+
+    func testAlignmentHysteresis() {
+        // Entra a ±3, se mantiene hasta ±5, sale por encima.
+        XCTAssertFalse(Geo.isAligned(delta: 4, tolerance: 3, wasAligned: false))
+        XCTAssertTrue(Geo.isAligned(delta: 2.9, tolerance: 3, wasAligned: false))
+        XCTAssertTrue(Geo.isAligned(delta: 4.5, tolerance: 3, wasAligned: true))
+        XCTAssertFalse(Geo.isAligned(delta: 5.5, tolerance: 3, wasAligned: true))
+        XCTAssertFalse(Geo.isAligned(delta: nil, tolerance: 3, wasAligned: true))
+    }
 }
