@@ -47,7 +47,7 @@ struct CompassView: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .onChange(of: aligned) { _, isAligned in
-            if isAligned { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+            if isAligned { Haptics.shared.startAligned() } else { Haptics.shared.stop() }
         }
         .accessibilityElement()
         .accessibilityLabel(accessibilityText)

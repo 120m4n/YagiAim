@@ -4,7 +4,7 @@ App iOS (SwiftUI, iOS 17+) para orientar una antena Yagi-Uda hacia un repetidor 
 
 - Toca el mapa (satélite/estándar) para marcar el repetidor; se guardan varios con nombre y altitud opcional.
 - Calcula **azimut verdadero** (círculo máximo), distancia y, si das la altitud, **elevación** con corrección de curvatura k = 4/3.
-- Brújula: el dial gira con el teléfono, el triángulo superior es el boom de la Yagi y la aguja naranja apunta al repetidor. Se pone verde y vibra al quedar dentro de la tolerancia (±1–15°, por defecto ±3°).
+- Brújula: el dial gira con el teléfono, el triángulo superior es el boom de la Yagi y la aguja naranja apunta al repetidor. Se pone verde y vibra 3 s (continua + golpes) al quedar dentro de la tolerancia (±1–15°, por defecto ±3°).
 - Usa `CLHeading.trueHeading`, que ya corrige la declinación magnética (unos −6° en Colombia). Sin fix GPS cae a norte magnético y lo avisa.
 - El rumbo se suaviza con media exponencial sobre sin/cos para evitar el salto 359°→0°.
 
@@ -41,5 +41,6 @@ Selecciona tu equipo de firma y ejecútalo en un iPhone físico (el simulador no
 | `MapView.swift` | MKMapView con teselas OSM en caché, anotaciones y toques |
 | `NetworkMonitor.swift` | Estado de conectividad (aviso sin red) |
 | `RepeaterStore.swift` | Repetidores persistidos en UserDefaults |
-| `CompassView.swift` | Brújula SwiftUI con háptica |
+| `CompassView.swift` | Brújula SwiftUI |
+| `Haptics.swift` | Vibración sostenida (3 s) al alinear, con Core Haptics |
 | `ContentView.swift` | Mapa, panel inferior, pantalla de apuntamiento, editor |
