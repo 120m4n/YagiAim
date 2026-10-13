@@ -18,9 +18,9 @@ MeshAzimuth (antes YagiAim) es una app iOS (SwiftUI, iOS 17+) para orientar una 
 
 ```bash
 brew install xcodegen
-cd YagiAim
+cd <carpeta-del-repositorio>
 xcodegen generate
-open YagiAim.xcodeproj
+open MeshAzimuth.xcodeproj
 ```
 
 Selecciona tu equipo de firma y ejecútalo en un iPhone físico (el simulador no tiene magnetómetro). `⌘U` corre las pruebas de geodesia.
@@ -47,7 +47,7 @@ Ver [PRIVACY.md](PRIVACY.md) para la política de privacidad.
 
 | Archivo | Rol |
 |---|---|
-| `YagiAimApp.swift` | Punto de entrada e inyección de dependencias |
+| `MeshAzimuthApp.swift` | Punto de entrada e inyección de dependencias |
 | `ContentView.swift` | Mapa y panel inferior |
 | `AimView.swift` / `AimInfo.swift` | Pantalla de apuntamiento y cálculo de azimut/distancia/elevación |
 | `RepeaterViews.swift` | Lista (búsqueda, orden, import/export) y editor de repetidores |

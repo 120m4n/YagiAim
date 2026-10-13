@@ -63,7 +63,7 @@ struct ContentView: View {
                 }
                 .padding(.top, 8)
             }
-            .navigationTitle("YagiAim")
+            .navigationTitle("MeshAzimuth")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Theme.navy, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)

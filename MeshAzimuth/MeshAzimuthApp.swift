@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct YagiAimApp: App {
+struct MeshAzimuthApp: App {
     @State private var location = LocationManager()
     @State private var store = RepeaterStore()
     @State private var motion = MotionManager()

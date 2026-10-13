@@ -10,7 +10,7 @@ final class CachedTileOverlay: MKTileOverlay {
     private static let session: URLSession = {
         let c = URLSessionConfiguration.default
         c.urlCache = cache
-        c.httpAdditionalHeaders = ["User-Agent": "YagiAim/1.0 (co.electrosoftware.yagiaim)"]
+        c.httpAdditionalHeaders = ["User-Agent": "MeshAzimuth/1.0 (co.electrosoftware.meshazimuth)"]
         return URLSession(configuration: c)
     }()
 

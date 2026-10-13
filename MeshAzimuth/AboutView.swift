@@ -8,7 +8,7 @@ struct AboutView: View {
     @State private var showGuide = false
 
     private var appName: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "YagiAim"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "MeshAzimuth"
     }
     private var version: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"

@@ -1,4 +1,4 @@
-name: YagiAim
+name: MeshAzimuth
 options:
   bundleIdPrefix: co.electrosoftware
   deploymentTarget:
@@ -9,12 +9,12 @@ settings:
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
 targets:
-  YagiAim:
+  MeshAzimuth:
     type: application
     platform: iOS
-    sources: [YagiAim]
+    sources: [MeshAzimuth]
     info:
-      path: YagiAim/Info.plist
+      path: MeshAzimuth/Info.plist
       properties:
         CFBundleDisplayName: MeshAzimuth
         UILaunchScreen: {}
@@ -28,12 +28,22 @@ targets:
           hacia el repetidor MeshCore.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: co.electrosoftware.yagiaim
+        PRODUCT_BUNDLE_IDENTIFIER: co.electrosoftware.meshazimuth
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-  YagiAimTests:
+  MeshAzimuthTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [YagiAimTests]
+    sources: [MeshAzimuthTests]
     dependencies:
-      - target: YagiAim
+      - target: MeshAzimuth
+schemes:
+  MeshAzimuth:
+    build:
+      targets:
+        MeshAzimuth: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [MeshAzimuthTests]

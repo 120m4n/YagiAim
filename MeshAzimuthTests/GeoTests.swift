@@ -1,6 +1,6 @@
 import CoreLocation
 import XCTest
-@testable import YagiAim
+@testable import MeshAzimuth
 
 final class GeoTests: XCTestCase {
     private let cali = CLLocationCoordinate2D(latitude: 3.4516, longitude: -76.5320)
