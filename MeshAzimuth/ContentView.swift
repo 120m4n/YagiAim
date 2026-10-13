@@ -7,6 +7,7 @@ struct ContentView: View {
     @Environment(RepeaterStore.self) private var store
 
     @State private var net = NetworkMonitor()
+    @State private var tracking: MKUserTrackingMode = Self.savedRegion() == nil ? .follow : .none
     @State private var pendingCoordinate: CLLocationCoordinate2D?
     @State private var showList = false
     @State private var showAimer = false
@@ -32,6 +33,7 @@ struct ContentView: View {
                 me: loc.location?.coordinate,
                 satellite: mapStyleSatellite,
                 initialRegion: Self.savedRegion(),
+                tracking: $tracking,
                 onSelect: { store.selectedID = $0 },
                 onTap: { pendingCoordinate = $0 },
                 onRegionChange: { r in
@@ -41,6 +43,9 @@ struct ContentView: View {
                 }
             )
             .ignoresSafeArea(edges: .bottom)
+            .overlay(alignment: .topTrailing) {
+                TrackingButton(mode: $tracking).padding(.top, 8).padding(.trailing, 12)
+            }
             .overlay(alignment: .bottomLeading) {
                 if !mapStyleSatellite {
                     Text("© OpenStreetMap contributors")

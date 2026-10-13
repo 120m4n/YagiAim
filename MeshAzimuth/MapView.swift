@@ -47,6 +47,7 @@ struct MapView: UIViewRepresentable {
     let me: CLLocationCoordinate2D?
     let satellite: Bool
     let initialRegion: MKCoordinateRegion?
+    @Binding var tracking: MKUserTrackingMode
     var onSelect: (UUID) -> Void
     var onTap: (CLLocationCoordinate2D) -> Void
     var onRegionChange: (MKCoordinateRegion) -> Void
@@ -59,7 +60,6 @@ struct MapView: UIViewRepresentable {
         map.showsUserLocation = true
         map.showsCompass = false
         if let initialRegion { map.setRegion(initialRegion, animated: false) }
-        else { map.userTrackingMode = .follow }
 
         let doubleTap = UITapGestureRecognizer()
         doubleTap.numberOfTapsRequired = 2
@@ -69,22 +69,19 @@ struct MapView: UIViewRepresentable {
         map.addGestureRecognizer(doubleTap)
         map.addGestureRecognizer(tap)
 
-        let track = MKUserTrackingButton(mapView: map)
-        track.tintColor = Theme.accentUI
         let compass = MKCompassButton(mapView: map)
         compass.compassVisibility = .adaptive
         let scale = MKScaleView(mapView: map)
         scale.scaleVisibility = .visible
-        for v in [track, compass, scale] {
+        for v in [compass, scale] {
             v.translatesAutoresizingMaskIntoConstraints = false
             map.addSubview(v)
         }
         let g = map.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            track.topAnchor.constraint(equalTo: g.topAnchor, constant: 8),
-            track.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -8),
-            compass.topAnchor.constraint(equalTo: track.bottomAnchor, constant: 8),
-            compass.centerXAnchor.constraint(equalTo: track.centerXAnchor),
+            // Debajo del botón de seguimiento (SwiftUI, 44 pt + 8 pt de margen).
+            compass.topAnchor.constraint(equalTo: g.topAnchor, constant: 60),
+            compass.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -12),
             scale.topAnchor.constraint(equalTo: g.topAnchor, constant: 8),
             scale.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 8),
         ])
@@ -94,6 +91,7 @@ struct MapView: UIViewRepresentable {
     func updateUIView(_ map: MKMapView, context: Context) {
         let c = context.coordinator
         c.parent = self
+        if map.userTrackingMode != tracking { map.setUserTrackingMode(tracking, animated: true) }
 
         // Base: satélite de Apple (requiere red) u OSM con caché.
         if satellite {
@@ -184,6 +182,12 @@ struct MapView: UIViewRepresentable {
         func mapView(_ map: MKMapView, didSelect view: MKAnnotationView) {
             if let a = view.annotation as? RepeaterAnnotation { parent.onSelect(a.id) }
             map.deselectAnnotation(view.annotation, animated: false)
+        }
+
+        func mapView(_ map: MKMapView, didChange mode: MKUserTrackingMode, animated: Bool) {
+            DispatchQueue.main.async { [weak self] in
+                if self?.parent.tracking != mode { self?.parent.tracking = mode }
+            }
         }
 
         func mapView(_ map: MKMapView, regionDidChangeAnimated animated: Bool) {
