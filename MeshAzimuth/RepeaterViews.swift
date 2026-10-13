@@ -55,9 +55,11 @@ struct RepeaterList: View {
                         }
                     }
                     .tint(.primary)
-                    .swipeActions {
-                        Button(role: .destructive) { store.delete(r) } label: { Label("Borrar", systemImage: "trash") }
-                        Button { editing = r } label: { Label("Editar", systemImage: "pencil") }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) { withAnimation { store.delete(r) } } label: { Label("Borrar", systemImage: "trash") }
+                    }
+                    .swipeActions(edge: .leading) {
+                        Button { editing = r } label: { Label("Editar", systemImage: "pencil") }.tint(Theme.accent)
                     }
                 }
             }
@@ -127,16 +129,20 @@ struct RepeaterEditor: View {
     @State var repeater: Repeater
     let isNew: Bool
     @State private var altitudeText = ""
+    @State private var latText = ""
+    @State private var lonText = ""
+
+    private static func parse(_ t: String) -> Double? { Double(t.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")) }
+    private var lat: Double? { Self.parse(latText).flatMap { abs($0) <= 90 ? $0 : nil } }
+    private var lon: Double? { Self.parse(lonText).flatMap { abs($0) <= 180 ? $0 : nil } }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Nombre") { TextField("Nombre", text: $repeater.name) }
                 Section("Coordenadas (WGS84)") {
-                    TextField("Latitud", value: $repeater.latitude, format: .number.precision(.fractionLength(6)))
-                        .keyboardType(.numbersAndPunctuation)
-                    TextField("Longitud", value: $repeater.longitude, format: .number.precision(.fractionLength(6)))
-                        .keyboardType(.numbersAndPunctuation)
+                    TextField("Latitud", text: $latText).keyboardType(.numbersAndPunctuation)
+                    TextField("Longitud", text: $lonText).keyboardType(.numbersAndPunctuation)
                 }
                 Section {
                     TextField("Altitud antena (m s.n.m.)", text: $altitudeText)
@@ -152,13 +158,20 @@ struct RepeaterEditor: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Guardar") {
                         repeater.altitude = Double(altitudeText.replacingOccurrences(of: ",", with: "."))
-                        isNew ? store.add(repeater) : store.update(repeater)
+                        repeater.latitude = lat ?? repeater.latitude
+                        repeater.longitude = lon ?? repeater.longitude
+                        // Se decide contra el store: si el id ya existe es edición, nunca un duplicado.
+                        store.repeaters.contains { $0.id == repeater.id } ? store.update(repeater) : store.add(repeater)
                         dismiss()
                     }
-                    .disabled(repeater.name.isEmpty || abs(repeater.latitude) > 90 || abs(repeater.longitude) > 180)
+                    .disabled(repeater.name.isEmpty || lat == nil || lon == nil)
                 }
             }
-            .onAppear { altitudeText = repeater.altitude.map { String($0) } ?? "" }
+            .onAppear {
+                altitudeText = repeater.altitude.map { String($0) } ?? ""
+                latText = String(repeater.latitude)
+                lonText = String(repeater.longitude)
+            }
         }
     }
 }
