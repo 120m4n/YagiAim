@@ -19,9 +19,9 @@ description: "Task list for 002-trace-frame-host-tests"
 
 ## Phase 2: Foundational
 
-- [ ] T004 [P] `tests/support/Hex.{h,cpp}`: `fromHex`/`toHex` (mayúsculas), con tests inline en `test_interop_packet`
-- [ ] T005 [P] `tests/support/Fixtures.{h,cpp}`: lector `<payload>\t<json>`, que ignora `#` y líneas vacías; mini-parser JSON plano; error si una línea no tiene JSON (US3-AS3)
-- [ ] T006 [P] `tests/fixtures/frames/synthetic.txt`: ejemplos del contrato de la 001 (petición, eco −25, rechazos de cada regla)
+- [x] T004 [P] `tests/support/Hex.{h,cpp}`: `fromHex`/`toHex` (mayúsculas), con tests inline en `test_interop_packet`
+- [x] T005 [P] `tests/support/Fixtures.{h,cpp}`: lector `<payload>\t<json>`, que ignora `#` y líneas vacías; mini-parser JSON plano; error si una línea no tiene JSON (US3-AS3) (tests en `tests/test_fixtures/`)
+- [x] T006 [P] `tests/fixtures/frames/synthetic.txt`: ejemplos del contrato de la 001 (petición, eco −25, rechazos de cada regla)
 
 **Checkpoint**: `./examples/trace_pinger/run_tests.sh test_interop_packet` compila y el smoke test pasa.
 

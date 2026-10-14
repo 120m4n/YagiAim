@@ -18,7 +18,7 @@ UTF-8, una entrada por línea: `<payload>\t<json>`. Las líneas que empiezan con
 | `echo` | tag, hash, snr_up_q | `parseEcho` ok con esos valores; `readFrom` ok |
 | `request` | tag, hash | `build(tag,hash)` == bytes; `readFrom` ok |
 | `other` | route, type | `parseEcho` rechaza; `readFrom` ok con route/type |
-| `invalid` | reason | `parseEcho` rechaza; si `"readFrom":false`, también lo rechaza upstream |
+| `invalid` | reason; opcionales `hash` (el que se pasa a `parseEcho`, por defecto `A1`) y `readFrom` | `parseEcho` rechaza; si `readFrom` está presente, `Packet::readFrom` upstream devuelve exactamente ese bool (`false` = también lo rechaza el parser upstream) |
 
 `rssi_dn` y `snr_dn_q` son informativos (metadatos de la radio receptora) y no se verifican.
 
