@@ -6,6 +6,7 @@ struct AboutView: View {
     @State private var cacheBytes = CachedTileOverlay.cache.currentDiskUsage
     @State private var confirmClear = false
     @State private var showGuide = false
+    @AppStorage("pinger.simulated") private var simulatedPinger = false
 
     private var appName: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "MeshAzimuth"
@@ -43,6 +44,12 @@ struct AboutView: View {
                     Button("Borrar caché de mapas", role: .destructive) { confirmClear = true }
                 } header: { Text("Almacenamiento") } footer: {
                     Text("Guarda solo las teselas que has visto (máx. 500 MB). Para usar una zona sin red, recórrela antes con conexión.")
+                }
+
+                Section {
+                    Toggle("Pinger simulado", isOn: $simulatedPinger)
+                } header: { Text("Depuración") } footer: {
+                    Text("Sustituye al pinger BLE por uno simulado que genera mediciones según tu rumbo y el azimut. Sirve para probar la pantalla sin hardware.")
                 }
 
                 Section("Desarrollador") {

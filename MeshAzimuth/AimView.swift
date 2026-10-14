@@ -6,6 +6,8 @@ struct AimView: View {
     @Environment(LocationManager.self) private var loc
     @Environment(RepeaterStore.self) private var store
     @Environment(MotionManager.self) private var motion
+    @Environment(PingerLink.self) private var link
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
     @AppStorage("tolerance") private var tolerance = 3.0
     @State private var aligned = false
@@ -13,6 +15,7 @@ struct AimView: View {
 
     var body: some View {
         NavigationStack {
+            ScrollView {
             VStack(spacing: 20) {
                 if let r = store.selected {
                     let info = AimInfo(me: loc.location, repeater: r, heading: loc.heading)
@@ -74,6 +77,8 @@ struct AimView: View {
                         }
                     }
 
+                    PingerSection(repeater: r, bearing: info?.bearing)
+
                     Text("Sostén el teléfono plano sobre el boom, con la parte superior hacia el director. Aléjate de metal y del cable coaxial.")
                         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
                         .padding(.horizontal)
@@ -81,6 +86,7 @@ struct AimView: View {
                 Spacer(minLength: 0)
             }
             .padding(.top)
+            }
             .navigationTitle(store.selected?.name ?? "Apuntar")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -88,7 +94,8 @@ struct AimView: View {
             }
         }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true; motion.start() }
-        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; motion.stop() }
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; motion.stop(); link.disconnect() }
+        .onChange(of: scenePhase) { _, phase in if phase != .active { link.stopLive() } }   // sin modo background
     }
 
     private var accuracyText: String {

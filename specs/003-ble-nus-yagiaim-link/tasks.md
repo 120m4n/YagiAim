@@ -60,10 +60,10 @@ Tests permanentes **solo donde hay riesgo real**: parser de líneas, reglas de `
 - [x] T018 [P] [US2] `RepeaterStore.swift`: `hashPrefix` con `decodeIfPresent`; `RepeaterEditor` con un campo "Prefijo hash (2 hex)" y ayuda
 - [x] T019 [US2] `BLELineTransport.swift`: `CBCentralManager` (cola propia), escaneo por servicio NUS, lista de periféricos, conexión, descubrimiento, `setNotifyValue`, escritura `.withoutResponse` fragmentada según `maximumWriteValueLength`, `LineAssembler`, `AsyncStream<String>`, recordar el último `identifier` en `UserDefaults`
 - [x] T020 [US2] `PingerLink.swift` (`@Observable`): handshake (`HELLO` → proto → `STOP` → `MON off` → `CFG?` → `SET hash`), `configure(hash:)`, `ping() async throws` (resuelve con `P,`, `!ERR` o timeout local), `startLive/stopLive` (un `Task` con intervalo `max(rate, 2000 ms)` que espera cada `P,`), `history` de 30, reconexión con backoff 1-2-4 s mientras haya interés
-- [ ] T021 [P] [US2] `PingerPicker.swift`: estados de Bluetooth (apagado, sin permiso con botón a Ajustes, buscando, lista)
-- [ ] T022 [P] [US2] `LinkCard.swift`: estado, SNR↑ / SNR↓ / RSSI / RTT / pérdida, sparkline de SNR↑ con Swift Charts (`LineMark`) y avisos `#WARN duty_wait` y `hash_collision` visibles
-- [ ] T023 [US2] `AimView.swift`: botón "Conectar pinger", `LinkCard`, interruptor "En vivo"; `stopLive` en `onDisappear` y al pasar a background (`scenePhase`)
-- [ ] T024 [US2] Ajustes de depuración: interruptor "Pinger simulado" (inyecta `SimulatedPinger`)
+- [x] T021 [P] [US2] `PingerPicker.swift`: estados de Bluetooth (apagado, sin permiso con botón a Ajustes, buscando, lista)
+- [x] T022 [P] [US2] `LinkCard.swift`: estado, SNR↑ / SNR↓ / RSSI / RTT / pérdida, sparkline de SNR↑ con Swift Charts (`LineMark`) y avisos `#WARN duty_wait` y `hash_collision` visibles
+- [x] T023 [US2] `AimView.swift`: botón "Conectar pinger", `LinkCard`, interruptor "En vivo"; `stopLive` en `onDisappear` y al pasar a background (`scenePhase`)
+- [x] T024 [US2] Ajustes de depuración: interruptor "Pinger simulado" (inyecta `SimulatedPinger`)
 
 ---
 
@@ -72,7 +72,7 @@ Tests permanentes **solo donde hay riesgo real**: parser de líneas, reglas de `
 - [x] T025 [P] [US3] `MeshAzimuthTests/SessionRecorderTests.swift`: 5 muestras con heading estable → `Reading` con medianas correctas; 2 de 5 con Δheading de 3° → `unstable` y excluidas; 3 inestables → `needsRepeat`; una muestra con `#WARN duty_wait` → `invalid` y excluida; media circular de 358/2/0; `delta` con signo; `headingAccuracy=20` → rechaza con `.needsCalibration`
 - [x] T026 [US3] `Session/SessionModels.swift` (`Sample`, `Reading`, `Session`)
 - [x] T027 [US3] `Session/SessionRecorder.swift`: `measureHere(n:)` usa `PingerLink.ping()` y lee `LocationManager.heading` al enviar (tx) y al recibir (rx); aplica las reglas de data-model
-- [ ] T028 [US3] UI: botón "Medir aquí" en `AimView` (deshabilitado si no hay conexión, brújula o hash) con progreso 1/5…5/5 y feedback háptico al terminar
+- [x] T028 [US3] UI: botón "Medir aquí" en `AimView` (deshabilitado si no hay conexión, brújula o hash) con progreso 1/5…5/5 y feedback háptico al terminar
 - [~] T029 [US3] SC-005: test de integración `PingerLinkSimTests.testSweepFindsAzimuth` con `SimulatedPinger` + 7 lecturas en {0, ±15, ±30, ±60, 180}: el máximo de SNR↑ queda en Δ = 0 ± 1° — **descartada: cadena completa cubierta por el uso del simulador y el banco.**
 
 ---
@@ -82,7 +82,7 @@ Tests permanentes **solo donde hay riesgo real**: parser de líneas, reglas de `
 - [x] T030 [P] [US4] `MeshAzimuthTests/SessionCSVTests.swift`: cabecera exacta del contrato, escapado RFC 4180 (nombre de repetidor con coma o comillas), formato de fechas, vacíos en timeout
 - [x] T031 [P] [US4] `Session/SessionStore.swift`: guardar/cargar/listar por repetidor en `Application Support/Sessions`
 - [x] T032 [P] [US4] `Session/SessionCSV.swift`
-- [ ] T033 [US4] `SessionView.swift`: lista de lecturas (Δ, SNR↑, SNR↓, pérdida, marca de repetir) + `ShareLink` del CSV; historial desde `RepeaterList`
+- [x] T033 [US4] `SessionView.swift`: lista de lecturas (Δ, SNR↑, SNR↓, pérdida, marca de repetir) + `ShareLink` del CSV; historial desde `RepeaterList`
 
 ---
 

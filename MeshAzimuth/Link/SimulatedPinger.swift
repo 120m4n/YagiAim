@@ -183,6 +183,15 @@ final class SimulatedPinger: LineTransport, @unchecked Sendable {
     }
 }
 
+/// Rumbo del teléfono y azimut al repetidor, compartidos de forma segura con el pinger simulado
+/// (que los lee desde otro hilo). La interfaz los actualiza cuando cambian.
+final class SimInputs: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _heading: Double?, _target: Double?
+    var heading: Double? { get { lock.withLock { _heading } } set { lock.withLock { _heading = newValue } } }
+    var target: Double? { get { lock.withLock { _target } } set { lock.withLock { _target = newValue } } }
+}
+
 /// Generador pseudoaleatorio reproducible (SplitMix64).
 struct SplitMix64: RandomNumberGenerator {
     private var state: UInt64

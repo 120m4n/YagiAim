@@ -64,8 +64,10 @@ final class BLELineTransport: NSObject, LineTransport, @unchecked Sendable {
     func startScan() {
         queue.async {
             self.scanning = true
+            if !self.wantsOpen { self.state = .scanning }
             self.ensureCentral()
             self.scanIfPossible()
+            self.reportBluetoothAvailability()
         }
     }
 
@@ -141,6 +143,17 @@ final class BLELineTransport: NSObject, LineTransport, @unchecked Sendable {
         queue.asyncAfter(deadline: .now() + Self.openTimeout, execute: item)
     }
 
+    /// Mientras solo se escanea (selector), el estado dice si Bluetooth está apagado o sin permiso.
+    private func reportBluetoothAvailability() {
+        guard scanning, !wantsOpen, let c = central else { return }
+        switch c.state {
+        case .poweredOn: state = .scanning
+        case .poweredOff, .unsupported: state = .failed(.bluetoothOff)
+        case .unauthorized: state = .failed(.unauthorized)
+        default: break
+        }
+    }
+
     private func scanIfPossible() {
         guard let c = central, c.state == .poweredOn else { return }
         c.scanForPeripherals(withServices: [Self.serviceUUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
@@ -201,6 +214,7 @@ final class BLELineTransport: NSObject, LineTransport, @unchecked Sendable {
 extension BLELineTransport: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         if scanning { scanIfPossible() }
+        reportBluetoothAvailability()
         beginConnectIfPossible()
         if central.state == .poweredOff || central.state == .unauthorized, state == .ready {
             state = .failed(central.state == .poweredOff ? .bluetoothOff : .unauthorized)

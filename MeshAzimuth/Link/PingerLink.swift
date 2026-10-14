@@ -48,7 +48,7 @@ final class PingerLink {
     /// Sin respuesta del pinger tras este tiempo, `ping()` falla (el pinger tarda ≈ 1.4 s con el preset por defecto).
     static let requestTimeout: Duration = .seconds(6)
 
-    @ObservationIgnored private let makeTransport: () -> LineTransport
+    @ObservationIgnored private let makeTransport: (PingerDevice?) -> LineTransport
     @ObservationIgnored private var transport: LineTransport?
     @ObservationIgnored private var readerTask: Task<Void, Never>?
     @ObservationIgnored private var statesTask: Task<Void, Never>?
@@ -59,7 +59,14 @@ final class PingerLink {
     @ObservationIgnored private var handshakeDone = false
     @ObservationIgnored private var resumeLiveAfterReconnect = false
 
-    init(makeTransport: @escaping () -> LineTransport) { self.makeTransport = makeTransport }
+    /// Rumbo y azimut que lee el pinger simulado (la interfaz los actualiza).
+    @ObservationIgnored let simInputs: SimInputs
+
+    /// `makeTransport` recibe el dispositivo elegido (nil = el último usado / el primero que aparezca).
+    init(simInputs: SimInputs = SimInputs(), makeTransport: @escaping (PingerDevice?) -> LineTransport) {
+        self.simInputs = simInputs
+        self.makeTransport = makeTransport
+    }
 
     var isOperational: Bool { state.isReady && handshakeDone }
 
@@ -71,7 +78,7 @@ final class PingerLink {
         wantConnected = true
         self.device = device
         self.hash = hash
-        let t = makeTransport()
+        let t = makeTransport(device)
         transport = t
         startReaders(t)
         do {
