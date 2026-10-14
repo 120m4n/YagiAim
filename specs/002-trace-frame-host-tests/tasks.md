@@ -70,8 +70,8 @@ description: "Task list for 002-trace-frame-host-tests"
 
 ## Phase 7: Polish
 
-- [ ] T023 Medir la suite (`time ./examples/trace_pinger/run_tests.sh`) < 10 s (SC-003); si no se cumple, reducir iteraciones de propiedad en local con `-DPROP_ITERS`
-- [ ] T024 [P] Sección "Tests y compatibilidad" en `examples/trace_pinger/README.md`
+- [x] T023 Medir la suite (`time ./examples/trace_pinger/run_tests.sh`) < 10 s (SC-003); si no se cumple, reducir iteraciones de propiedad en local con `-DPROP_ITERS` — **Medido 2026-10-14:** 4.4–4.7 s (3 ejecuciones, 8 núcleos, 13 suites, 99 tests, 0 fallos, 0 saltados). No hizo falta `-DPROP_ITERS`.
+- [x] T024 [P] Sección "Tests y compatibilidad" en `examples/trace_pinger/README.md`
 
 ## Dependencies & Execution Order
 
