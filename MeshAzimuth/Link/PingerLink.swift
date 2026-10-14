@@ -128,9 +128,10 @@ final class PingerLink {
 
     /// Envía un `PING` y espera su `P,`. Falla con `PingerError.rejected` si el pinger responde `!ERR`
     /// (p. ej. `state busy`) o con `LinkError.timeout` si no responde.
-    func ping() async throws -> PingReport {
+    /// `onSent` se llama justo después de escribir el comando: ahí hay que leer el rumbo (`heading_tx`).
+    func ping(onSent: (@MainActor () -> Void)? = nil) async throws -> PingReport {
         guard isOperational else { throw LinkError.connectionLost }
-        let r = try await request("PING") { if case .ping = $0 { return true } else { return false } }
+        let r = try await request("PING", onSent: onSent) { if case .ping = $0 { return true } else { return false } }
         guard case .ping(let result) = r.event else { throw LinkError.writeFailed }
         return PingReport(result: result, tTx: r.tTx, tRx: Date(), dutyWait: r.dutyWait)
     }
@@ -191,7 +192,7 @@ final class PingerLink {
         }
     }
 
-    private func request(_ command: String, accept: @escaping (PingerEvent) -> Bool)
+    private func request(_ command: String, onSent: (@MainActor () -> Void)? = nil, accept: @escaping (PingerEvent) -> Bool)
         async throws -> (event: PingerEvent, tTx: Date, dutyWait: Bool) {
         guard waiter == nil else { throw PingerError.requestInFlight }
         guard let transport else { throw LinkError.connectionLost }
@@ -205,6 +206,7 @@ final class PingerLink {
         }
         try await transport.send(command)
         w.tTx = Date()
+        onSent?()
         let event = try await w.await()
         return (event, w.tTx, w.dutyWait)
     }

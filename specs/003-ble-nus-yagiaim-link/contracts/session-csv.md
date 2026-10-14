@@ -13,6 +13,8 @@ session_id,repeater_name,repeater_hash,repeater_lat,repeater_lon,reading_idx,sam
 | t_*_iso | ISO 8601 con milisegundos y offset (`2026-10-15T07:12:03.215-05:00`) |
 | *_deg | 1 decimal; `delta_deg` en (−180, 180] |
 | unstable, invalid | `0`/`1` (`invalid` = hubo `#WARN duty_wait` entre el `PING` y su `P,`) |
+| reading_idx, sample_idx | desde 1; `sample_idx` es la posición dentro de su lectura |
+| Fin de línea | `\r\n` (RFC 4180), incluida la última fila |
 | snr_*, rssi | igual que en la línea `P,` (vacío si timeout) |
 | repeater_hash | 2 hex |
 

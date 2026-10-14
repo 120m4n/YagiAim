@@ -100,8 +100,8 @@ struct Sample: Codable, Identifiable {
   var result: PingResult
 }
 struct Reading: Codable, Identifiable {
-  var id: UUID; var index: Int; var meanHeading: Double; var meanDelta: Double
-  var medSnrUp, medSnrDn, medRssiDn: Double?; var lossPct: Int
+  var id: UUID; var index: Int; var meanHeading: Double?; var meanDelta: Double?   // nil sin muestras usables; la media de delta es circular (correcta cerca de ±180°)
+  var medSnrUp, medSnrDn, medRssiDn: Double?; var lossPct: Int?   // timeouts/(ok+timeouts); nil sin datos
   var stableCount: Int; var needsRepeat: Bool    // stableCount < 3
 }
 struct Session: Codable, Identifiable {
