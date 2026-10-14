@@ -56,8 +56,8 @@ description: "Task list for 002-trace-frame-host-tests"
 ## Phase 5: User Story 3 — Capturas de campo (P2)
 
 - [x] T018 [P] [US3] `tests/test_field_frames/test_field_frames.cpp`: recorre `fixtures/frames/*.txt` y aplica las aserciones por `kind` (`contracts/fixture-format.md`)
-- [ ] T019 [US3] Capturar con el XIAO flasheado (`SET raw=1` + `PING` para ecos, `MON on` para otros tipos): ≥ 10 ecos y ≥ 2 tramas de otros tipos, anotadas en `tests/fixtures/frames/field-<fecha>.txt` (el spike KISS ya no hace falta). Requiere el XIAO conectado
-- [ ] T020 [US3] Si una captura real contradice el contrato: abrir un issue, ajustar el contrato y `TraceFrame`, y dejar el fixture como regresión
+- [x] T019 [US3] Capturar con el XIAO flasheado (`SET raw=1` + `PING` para ecos, `MON on` para otros tipos): ≥ 10 ecos y ≥ 2 tramas de otros tipos, anotadas en `tests/fixtures/frames/field-<fecha>.txt` (el spike KISS ya no hace falta). Requiere el XIAO conectado
+- [x] T020 [US3] Si una captura real contradice el contrato: abrir un issue, ajustar el contrato y `TraceFrame`, y dejar el fixture como regresión — **Resultado 2026-10-14:** las 12 capturas reales de eco coinciden con el contrato (sin contradicciones, nada que ajustar). Limitación: los adverts llegan truncados a 64 B por el límite de la línea `R,` y no sirven como fixtures completos.
 
 ---
 
