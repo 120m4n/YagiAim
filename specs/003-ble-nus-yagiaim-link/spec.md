@@ -1,16 +1,18 @@
-# Feature Specification: Enlace BLE NUS pinger ↔ YagiAim con muestras atadas al rumbo
+# Feature Specification: Enlace BLE NUS pinger ↔ MeshAzimuth con muestras atadas al rumbo
 
 **Feature Branch**: `003-ble-nus-yagiaim-link`
 
 **Created**: 2026-10-13
 
-**Status**: Draft
+**Status**: Ready for planning (revisada 2026-10-14)
 
-**Input**: User description: "BLE NUS en el firmware y cliente en YagiAim que asocia SNR con rumbo."
+**Input**: User description: "BLE NUS en el firmware y cliente en MeshAzimuth que asocia SNR con rumbo."
 
 ## Contexto
 
 Las fases 001 y 002 entregan un pinger que mide el enlace por Serial con un protocolo de líneas verificado. Para alinear en campo, el usuario debe tener el teléfono sobre el boom de la Yagi, sin cables. Esta fase lleva el **mismo** protocolo por BLE (Nordic UART Service). Además, la app registra cada medición junto con el rumbo verdadero del teléfono **en el instante de la transmisión**.
+
+**Ubicación**: el firmware vive en el repo Meshcore (`examples/trace_pinger/`, rama `feature/i2c-actuator-public-channel`) y la app en la raíz de este repo (proyecto Xcode `MeshAzimuth`, con carpetas nuevas `Link/` y `Session/`). El nombre BLE conserva el prefijo `YagiPinger-`. Los fixtures de líneas se copian a `MeshAzimuthTests/Fixtures/lines/` y `tools/sync_fixtures.sh --check` verifica que coinciden con los del repo Meshcore.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -32,7 +34,7 @@ El pinger anuncia un servicio NUS. Cualquier central BLE puede enviarle comandos
 
 ---
 
-### User Story 2 - Conectar YagiAim al pinger y ver el enlace en vivo (Priority: P1)
+### User Story 2 - Conectar MeshAzimuth al pinger y ver el enlace en vivo (Priority: P1)
 
 En la pantalla de apuntamiento el usuario toca "Conectar pinger". La app encuentra el pinger y se conecta. Configura `hash` a partir del repetidor seleccionado y muestra en vivo SNR de subida, SNR de bajada, RSSI, RTT y pérdida, junto a la brújula.
 
@@ -42,9 +44,9 @@ En la pantalla de apuntamiento el usuario toca "Conectar pinger". La app encuent
 
 **Acceptance Scenarios**:
 
-1. **Given** un repetidor seleccionado con `hashPrefix = "A1"`, **When** la app conecta, **Then** envía `HELLO`, valida `proto=1`, envía `SET hash=A1` y muestra "Conectado · A1".
+1. **Given** un repetidor seleccionado con `hashPrefix = "A1"`, **When** la app conecta, **Then** envía `HELLO`, valida `proto=1`, y luego `STOP`, `MON off`, `CFG?` (lee `rate` y `txp`) y `SET hash=A1`, y muestra "Conectado · A1".
 2. **Given** un repetidor sin `hashPrefix`, **When** la app conecta, **Then** pide el prefijo (2 hex) en el editor del repetidor antes de permitir pings.
-3. **Given** conectado, **When** el usuario activa "En vivo", **Then** la app envía `PING` cada `rate` ms (cadencia controlada por la app, ver FR-012) y actualiza la tarjeta de enlace y una sparkline de los últimos 30 SNR de subida.
+3. **Given** conectado, **When** el usuario activa "En vivo", **Then** la app envía `PING` con un intervalo de 2000 ms por defecto, nunca menor que `rate` (cadencia controlada por la app, ver FR-012), esperando el `P,` de cada uno antes de enviar el siguiente, y actualiza la tarjeta de enlace y una sparkline de los últimos 30 SNR de subida.
 4. **Given** `proto` ≠ 1 en `#HELLO`, **When** se recibe, **Then** la app se desconecta y muestra "Firmware incompatible (proto=N)".
 5. **Given** que el pinger se apaga, **When** se pierde la conexión, **Then** la app lo indica en ≤ 3 s e intenta reconectar en segundo plano mientras la pantalla siga abierta.
 
@@ -60,10 +62,11 @@ El usuario orienta la antena y toca "Medir aquí". La app hace una ráfaga de 5 
 
 **Acceptance Scenarios**:
 
-1. **Given** conectado y con brújula válida, **When** el usuario toca "Medir aquí", **Then** se envían 5 `PING` separados `rate` ms. Cada muestra guarda `heading_tx`, `heading_rx`, `heading_accuracy`, la ubicación y el `P,` completo.
+1. **Given** conectado y con brújula válida, **When** el usuario toca "Medir aquí", **Then** se envían 5 `PING` consecutivos (cada uno tras recibir el `P,` del anterior y respetando el intervalo mínimo). Cada muestra guarda `heading_tx`, `heading_rx`, `heading_accuracy`, la ubicación y el `P,` completo. `heading_rx` se mide al recibir el `P,`, que llega ≈ 1.4 s después de transmitir (el pinger espera toda su ventana de recepción).
 2. **Given** una muestra donde `|heading_rx − heading_tx| > 2°`, **When** se guarda, **Then** se marca `unstable` y se excluye de la mediana. Si quedan < 3 muestras estables, la lectura se marca "repetir".
 3. **Given** `headingAccuracy < 0` o > 15°, **When** el usuario toca "Medir aquí", **Then** la app pide calibrar y no mide.
 4. **Given** una lectura completa, **When** se muestra, **Then** incluye `Δ = rumbo − azimut` con signo, la mediana de SNR de subida y la pérdida.
+5. **Given** un `#WARN duty_wait` recibido entre el `PING` y su `P,`, **When** se guarda la muestra, **Then** se marca `invalid` (el TX se retrasó y `heading_tx` ya no corresponde) y no cuenta en la mediana.
 
 ---
 
@@ -88,6 +91,8 @@ Cada sesión (repetidor, fecha, ubicación, lecturas y muestras crudas) se guard
 - **Línea corrupta o prefijo desconocido**: se ignora (contrato de líneas, regla 3) y se cuenta en métricas de depuración.
 - **El usuario sale de la pantalla de apuntamiento con "En vivo" activo**: la app deja de enviar `PING`. El pinger nunca queda en `GO` por culpa de la app, porque la app no usa `GO`.
 - **App en segundo plano**: se detienen los pings. No hay modo background en esta fase.
+- **`PING` con otro pendiente**: el pinger responde `!ERR state busy`. La app nunca envía un `PING` sin haber recibido el resultado (o agotado un timeout local) del anterior; `ping()` falla si recibe `!ERR`.
+- **Límite de TX del pinger**: con el preset por defecto (ToA 177 ms) caben ≈ 33 TX por minuto (10 % en 60 s). Por eso el modo "En vivo" usa 2000 ms por defecto: a 1500 ms el pinger empezaría a retrasar los TX tras ~50 s.
 - **Dos pingers cerca**: la lista de dispositivos muestra todos y el último usado se recuerda por identificador de periférico.
 
 ## Requirements *(mandatory)*
@@ -100,17 +105,19 @@ Cada sesión (repetidor, fecha, ubicación, lecturas y muestras crudas) se guard
 - **FR-004**: Los eventos DEBEN difundirse a todos los transportes activos (Serial y BLE) mediante un `LineSink` compuesto. Los comandos se aceptan desde cualquiera.
 - **FR-005**: Al desconectarse BLE, si había `GO` o una ráfaga iniciada desde BLE, el pinger DEBE ejecutar `STOP` (Constitución II).
 - **FR-006**: Máximo 1 conexión BLE. El advertising se detiene mientras hay conexión y se reanuda al desconectar.
-- **FR-007**: Seguridad: sin emparejamiento en v1. [NEEDS CLARIFICATION: ¿se requiere PIN/bonding para evitar que un tercero cercano dispare pings? El riesgo está acotado por la Constitución II (rate/duty/solo TRACE), por eso se propone diferirlo].
+- **FR-007**: Seguridad: sin emparejamiento en v1 (Security Mode 1 Level 1). **Decisión 2026-10-14: PIN/bonding diferido a v2.** Riesgo aceptado: un tercero dentro del alcance BLE puede ejecutar comandos (`SET`, `SAVE`, `PING`). El firmware sigue imponiendo `rate ≥ 1 s`, duty ≤ 10 % y solo `TRACE`/`DIRECT` (Constitución II), así que no puede inundar la mesh. Se revisa en T037 con los resultados de campo.
 - **FR-008**: El firmware DEBE compilarse con el fork de framework de MeshCore (parche BLE contra bloqueos por conexiones rápidas, ver plan de la 001).
+- **FR-018**: `#WARN ble_lost_stop` DEBE añadirse al contrato `001/contracts/line-protocol.md` y a los fixtures `info.txt` (Constitución IV).
+- **FR-019**: `tracecore::Pinger` no es seguro entre hilos y los callbacks de Bluefruit corren en otra tarea: la lectura y escritura de `BLEUart` se hacen por sondeo desde `loop()`, y el callback de desconexión solo activa una bandera que `loop()` convierte en `onTransportLost`.
 
 ### Functional Requirements — app iOS
 
 - **FR-009**: `PingerLink` (CoreBluetooth central) DEBE escanear por el servicio NUS, listar los periféricos con nombre `YagiPinger-*`, conectar, descubrir, suscribirse a TX y escribir en RX respetando `maximumWriteValueLength(for: .withoutResponse)`.
 - **FR-010**: La capa de transporte DEBE abstraerse tras el protocolo `LineTransport`, con dos implementaciones: `BLELineTransport` y `SimulatedPinger`. Este último genera líneas `P,` con SNR en función del delta respecto al azimut, siguiendo un patrón tipo Yagi. Sirve para tests y demos sin hardware.
-- **FR-011**: `LineCodec.swift` DEBE parsear `#HELLO`, `#CFG`, `#OK`, `#WARN`, `!ERR`, `P`, `S` y `R`, y validarse con los fixtures de `firmware/pinger/test/fixtures/lines/` (Constitución IV).
-- **FR-012**: La app DEBE controlar la cadencia enviando `PING` individuales (nunca `GO`), para conocer el instante de cada TX y fijar `heading_tx`. El intervalo de la app nunca es menor que el `rate` reportado por `#CFG`.
-- **FR-013**: `Repeater` DEBE ganar el campo `hashPrefix: String?` (2 hex, validado), editable en `RepeaterEditor` y migrado sin perder los repetidores existentes (Codable con valor por defecto).
-- **FR-014**: Cada `Sample` DEBE guardar: `t_tx`, `t_rx`, `heading_tx`, `heading_rx`, `heading_accuracy`, lat/lon/alt y su precisión, `target_bearing`, `delta` y los campos de `P`. Se marca `unstable` si `|Δheading| > 2°` (configurable).
+- **FR-011**: `LineCodec.swift` DEBE parsear `#HELLO`, `#CFG`, `#OK`, `#WARN`, `!ERR`, `P`, `S` (con el campo final `busy`) y `R`, y validarse con los fixtures de `MeshAzimuthTests/Fixtures/lines/`, copia verificada de los de Meshcore por `tools/sync_fixtures.sh --check` (Constitución IV).
+- **FR-012**: La app DEBE controlar la cadencia enviando `PING` individuales (nunca `GO`), para conocer el instante de cada TX y fijar `heading_tx`. El intervalo entre inicios de `PING` nunca es menor que el `rate` de `#CFG` y, en "En vivo", es de 2000 ms por defecto (ver el límite de TX en los casos borde). La app espera el `P,` (o un `!ERR`, o un timeout local) de cada `PING` antes de enviar el siguiente.
+- **FR-013**: `Repeater` DEBE ganar el campo `hashPrefix: String?` (2 hex, validado), editable en `RepeaterEditor` y migrado sin perder los repetidores existentes (opcional: la decodificación sintetizada de `Codable` ya usa `decodeIfPresent`).
+- **FR-014**: Cada `Sample` DEBE guardar: `t_tx`, `t_rx`, `heading_tx`, `heading_rx`, `heading_accuracy`, lat/lon/alt y su precisión, `target_bearing`, `delta` y los campos de `P`. Se marca `unstable` si `|Δheading| > 2°` (configurable) e `invalid` si el pinger emitió `#WARN duty_wait` entre el `PING` y su `P,`.
 - **FR-015**: Una `Reading` DEBE resumir N muestras (por defecto 5): medianas de SNR de subida, SNR de bajada y RSSI sobre las muestras estables y `ok`, pérdida, rumbo medio circular y delta medio.
 - **FR-016**: Las sesiones DEBEN persistir como JSON en `Application Support/Sessions/<uuid>.json` y exportarse a CSV (`contracts/session-csv.md`) con `ShareLink`.
 - **FR-017**: `Info.plist` DEBE incluir `NSBluetoothAlwaysUsageDescription` en español.
@@ -128,7 +135,7 @@ Cada sesión (repetidor, fecha, ubicación, lecturas y muestras crudas) se guard
 
 - **SC-001**: De tocar "Conectar" a "Conectado · A1" en ≤ 5 s con el pinger a menos de 3 m.
 - **SC-002**: La latencia BLE añadida (escritura `PING` → `P,` en la app, menos la latencia medida en Serial) es ≤ 100 ms en el p95.
-- **SC-003**: 30 min de "En vivo" sin desconexiones con el pinger a menos de 2 m (los dos en el boom).
+- **SC-003**: 30 min de "En vivo" a 2 s por ping, sin desconexiones y sin `#WARN duty_wait`, con el pinger a menos de 2 m (los dos en el boom).
 - **SC-004**: 100 % de las muestras guardadas tienen `heading_tx` y `heading_rx` válidos. Con el teléfono girando a ≥ 5°/s durante una medición, ≥ 90 % de las muestras se marcan `unstable`.
 - **SC-005**: Con `SimulatedPinger`, el delta del máximo de SNR de una sesión simulada de 7 lecturas coincide con el azimut ±1° (prueba de la cadena completa sin hardware).
 - **SC-006**: El parser Swift pasa el 100 % de los fixtures de líneas que pasa el C++.
@@ -136,6 +143,6 @@ Cada sesión (repetidor, fecha, ubicación, lecturas y muestras crudas) se guard
 ## Assumptions
 
 - El teléfono y el pinger van juntos en el boom (BLE a < 2 m).
-- La app sigue siendo YagiAim (iOS 17+, SwiftUI, `@Observable`). Se añade CoreBluetooth sin dependencias de terceros.
+- La app sigue siendo MeshAzimuth (iOS 17+, SwiftUI, `@Observable`). Se añade CoreBluetooth sin dependencias de terceros. Las pruebas XCTest corren en el simulador `ref` (iOS 26.4); el banco BLE real usa un iPhone físico.
 - Fuera de alcance: diagrama polar y veredicto automático (fase 004), modo background, varios pingers a la vez y actualización OTA.
 - `hashPrefix` lo introduce el usuario. Su autocompletado desde un advert capturado (`R,`) queda como mejora futura.

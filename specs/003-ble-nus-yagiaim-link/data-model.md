@@ -1,26 +1,28 @@
-# Data Model: 003 BLE NUS + YagiAim
+# Data Model: 003 BLE NUS + MeshAzimuth
 
 ## Firmware
 
-### Transportes (`firmware/pinger/src/`)
+### Transportes (`examples/trace_pinger/`)
 
 ```cpp
 enum class Origin : uint8_t { Serial, Ble };
 struct CompositeSink : tracecore::LineSink {   // difunde a Serial y BLE
-  void write(std::string_view line) override;
+  void line(const char* s, size_t n) override;  // interfaz real de LineSink
 };
 ```
 
-`tracecore::Pinger` recibe `onCommand(line, now, origin)`. El origen solo se guarda para FR-005: `onTransportLost(Origin::Ble)` ejecuta `STOP` si `activeOrigin == Ble`. Hay que extender `Pinger`: es un cambio pequeño en `tracecore` y lleva test.
+`tracecore::Pinger` recibe `onCommand(line, now, origin = Origin::Serial)` (el valor por defecto mantiene intactos los tests actuales). El origen solo se guarda para FR-005: `onTransportLost(Origin::Ble)` ejecuta `STOP` si `activeOrigin == Ble`. Hay que extender `Pinger`: es un cambio pequeño en `tracecore` y lleva test. Al ejecutar el `STOP` emite `#WARN ble_lost_stop`.
 
-## iOS (`ios/YagiAim/Link/`, `ios/YagiAim/Session/`)
+**Hilos**: los callbacks de Bluefruit corren en otra tarea FreeRTOS y `Pinger` no es seguro entre hilos. `BleTransport` lee `bleuart` y escribe las notificaciones desde `loop()`; el callback de desconexión solo pone una bandera `volatile` que `loop()` convierte en `onTransportLost(Origin::Ble)`. El reensamblado por `\n` vive en un `LineAssembler` puro de `tracecore` (con test), compartido por Serial y BLE.
+
+## iOS (`MeshAzimuth/Link/`, `MeshAzimuth/Session/`)
 
 ### Repeater (modificado)
 
 ```swift
 struct Repeater: Identifiable, Codable, Hashable {
   …
-  var hashPrefix: String?   // "A1"; validado ^[0-9A-F]{2}$; decodeIfPresent
+  var hashPrefix: String?   // "A1"; validado ^[0-9A-F]{2}$; un opcional sintetizado ya decodifica con decodeIfPresent
 }
 ```
 
@@ -37,6 +39,10 @@ enum PingerEvent: Equatable {
   case summary(BurstSummary)
   case raw(RawFrame)
   case unknown(String)
+}
+struct BurstSummary: Equatable {           // línea S,  (8 campos: el último es busy)
+  var n: Int; var ok: Int; var lossPct: Int?
+  var medSnrUp: Double?; var medSnrDn: Double?; var medRssiDn: Double?; var busy: Int
 }
 struct PingResult: Equatable, Codable {
   var seq: UInt32; var tag: String; var status: Status
@@ -68,7 +74,11 @@ final class SimulatedPinger: LineTransport    // R-6
 | history | RingBuffer<PingResult>(30) |
 | live | Bool |
 
-Métodos: `connect(to:)`, `disconnect()`, `configure(hash:)`, `ping() async -> PingResult` (correlaciona por `seq` siguiente), `startLive()`, `stopLive()`.
+Métodos: `connect(to:)`, `disconnect()`, `configure(hash:)`, `ping() async throws -> PingResult`, `startLive()`, `stopLive()`.
+
+- **Handshake** al conectar: `HELLO` → validar `proto=1` → `STOP` → `MON off` → `CFG?` (lee `rate`, `txp`) → `SET hash=XX`.
+- **`ping()`** envía `PING` y se resuelve con la primera de: la línea `P,` (única en vuelo, no hace falta correlacionar por `seq`), un `!ERR` (lanza el error) o un timeout local (timeout auto del pinger + 3 s). Registra si llegó un `#WARN duty_wait` en medio.
+- **`startLive()`** corre un `Task` con intervalo `max(rate, 2000 ms)` que espera cada resultado antes del siguiente `PING`.
 
 ### Sesión
 
@@ -80,6 +90,7 @@ struct Sample: Codable, Identifiable {
   var latitude, longitude: Double; var altitude: Double?; var hAccuracy: Double
   var targetBearing: Double; var delta: Double
   var unstable: Bool
+  var invalid: Bool      // llegó #WARN duty_wait entre el PING y su P,
   var result: PingResult
 }
 struct Reading: Codable, Identifiable {
@@ -96,5 +107,6 @@ struct Session: Codable, Identifiable {
 
 Reglas:
 - `delta = Geo.signedDelta(target: targetBearing, current: headingTx)`. Mismo signo que la UI: positivo significa girar a la derecha.
-- `unstable = abs(Geo.signedDelta(target: headingRx, current: headingTx)) > threshold` (por defecto 2°).
+- `unstable = abs(Geo.signedDelta(target: headingRx, current: headingTx)) > threshold` (por defecto 2°). `headingRx` se toma al recibir el `P,` (≈ 1.4 s después del TX), así que `unstable` mide el movimiento en toda esa ventana.
+- `invalid = true` si hubo `#WARN duty_wait` entre el `PING` y su `P,`. `stableCount` cuenta las muestras `ok`, no `unstable` y no `invalid`.
 - Las medianas de `Reading` usan la misma regla que `S,` (n par → promedio de los centrales) para tener paridad con el C++.

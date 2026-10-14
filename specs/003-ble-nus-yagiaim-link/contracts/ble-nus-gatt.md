@@ -24,7 +24,7 @@ No hay otras características obligatorias. El Device Information Service (`0x18
 
 - Contenido: líneas `proto=1` terminadas en `\n`, idénticas a Serial.
 - **TX**: el pinger encola la línea completa y la envía en trozos de `min(MTU−3, 244)` bytes. Una notificación puede contener el final de una línea y el inicio de la siguiente.
-- **RX**: el pinger concatena las escrituras hasta `\n`. Si el buffer supera 160 B sin `\n`, lo descarta y responde `!ERR syntax overflow`.
+- **RX**: el pinger concatena las escrituras hasta `\n`. Si el buffer supera 160 B sin `\n`, lo descarta y responde `!ERR syntax`.
 - La app hace lo mismo en sentido contrario.
 
 ## Parámetros de conexión
@@ -45,8 +45,8 @@ ADVERTISING ──connect──▶ CONNECTED ──(CCCD TX on)──▶ READY
 ```
 
 - Al pasar a READY el pinger **no** emite nada por iniciativa propia. La app arranca con `HELLO`.
-- Al desconectar: `STOP` implícito si la ráfaga o `GO` vino de BLE, `#WARN ble_lost_stop` por Serial y se reanuda el advertising.
+- Al desconectar: `STOP` implícito si la ráfaga o `GO` vino de BLE, `#WARN ble_lost_stop` (a los transportes activos) y se reanuda el advertising.
 
 ## Seguridad
 
-v1: Security Mode 1 Level 1 (sin cifrado ni emparejamiento). Ver spec FR-007.
+v1: Security Mode 1 Level 1 (sin cifrado ni emparejamiento). PIN/bonding diferido a v2 (spec FR-007).

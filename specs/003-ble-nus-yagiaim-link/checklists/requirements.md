@@ -1,4 +1,4 @@
-# Specification Quality Checklist: BLE NUS + YagiAim
+# Specification Quality Checklist: BLE NUS + MeshAzimuth
 
 **Created**: 2026-10-13 · **Feature**: [spec.md](../spec.md)
 
@@ -10,11 +10,11 @@
 
 ## Requirement Completeness
 
-- [ ] Sin [NEEDS CLARIFICATION]: **1 abierto** (FR-007, PIN/bonding; se propone diferirlo a v2)
+- [x] Sin [NEEDS CLARIFICATION]: FR-007 (PIN/bonding) diferido a v2 por decisión del 2026-10-14
 - [x] Escenarios por historia, casos borde (permisos, MTU, background, varios pingers)
 - [x] Criterios medibles SC-001…SC-006, incluido un SC verificable sin hardware (SC-005)
 
 ## Feature Readiness
 
 - [x] FR → tareas (tabla)
-- [x] Listo para `/speckit.implement`; FR-007 no bloquea (default: sin emparejamiento)
+- [x] Listo para construir. 2026-10-14: revisada contra la app y el firmware reales (nombres, rutas, fixtures entre repos, hilos de Bluefruit, cadencia y límite de TX, handshake, `invalid`)
