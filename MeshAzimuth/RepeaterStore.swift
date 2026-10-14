@@ -9,9 +9,18 @@ struct Repeater: Identifiable, Codable, Hashable {
     var longitude: Double
     /// Altitud de la antena del repetidor (m s.n.m.), opcional, para elevación.
     var altitude: Double?
+    /// Primer byte de la clave pública del repetidor (2 hex), para el pinger. Opcional: los
+    /// repetidores guardados antes de este campo se decodifican con `nil`.
+    var hashPrefix: String?
 
     var coordinate: CLLocationCoordinate2D {
         .init(latitude: latitude, longitude: longitude)
+    }
+
+    /// "a1" → "A1". nil si no son exactamente 2 dígitos hexadecimales.
+    static func normalizedHashPrefix(_ text: String) -> String? {
+        let t = text.trimmingCharacters(in: .whitespaces).uppercased()
+        return t.count == 2 && t.allSatisfy({ $0.isASCII && $0.isHexDigit }) ? t : nil
     }
 }
 

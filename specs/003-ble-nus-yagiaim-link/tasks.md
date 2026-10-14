@@ -9,6 +9,10 @@ description: "Task list for 003-ble-nus-yagiaim-link"
 
 **Prerequisites**: 001 (firmware, implementado y flasheado en Meshcore `0b85c69e`) y 002 (fixtures de líneas, Meshcore `22ccc0b2`). El código de firmware vive en el repo Meshcore; la app, en la raíz de este repo.
 
+## Política de pruebas y commits (decisión del 2026-10-14)
+
+Tests permanentes **solo donde hay riesgo real**: parser de líneas, reglas de `unstable`/`invalid`, medianas y CSV. El resto se verifica con compilación y comprobaciones desechables. Las tareas de prueba fuera de ese alcance quedan **descartadas** (T015, T016, T029). Commits **por bloque**: capa de enlace de la app (T006, T017–T020), UI (T021–T024), sesión (T025–T028), CSV (T030–T033) y firmware BLE (T039, T040, T008–T014).
+
 ## Format: `[ID] [P?] [Story] Description`
 
 ## Phase 1: Setup
@@ -22,7 +26,7 @@ description: "Task list for 003-ble-nus-yagiaim-link"
 - [x] T038 [P] `tools/sync_fixtures.sh`: sin argumentos copia los 5 archivos de `$MESHCORE_DIR/examples/trace_pinger/tests/fixtures/lines/` a `MeshAzimuthTests/Fixtures/lines/`; con `--check` compara byte a byte y sale ≠ 0 si difieren (research R-8). Hacer la primera copia
 - [x] T004 [P] Test `MeshAzimuthTests/LineCodecTests.swift`: recorre `Fixtures/lines/events_*.txt` e `info.txt` y compara el JSON con `PingerEvent` (incluida la línea `S,` con `busy`); las `reply` de `commands.txt` se parsean como `.ok`/`.warn`/`.error`; prefijos desconocidos → `.unknown`; caso de reensamblado (`"P,1,AB"` + `"CD…\nP,2…"`) → 2 líneas
 - [x] T005 [P] `MeshAzimuth/Link/LineCodec.swift`: `parse(_ line:) -> PingerEvent` y `LineAssembler` (buffer → líneas completas, tope 160 B, descarte en overflow)
-- [ ] T006 [P] `MeshAzimuth/Link/LineTransport.swift`: protocolo `LineTransport` y `LinkState`
+- [x] T006 [P] `MeshAzimuth/Link/LineTransport.swift`: protocolo `LineTransport` y `LinkState` — **Hecho 2026-10-14.** Respecto al data-model, el protocolo añade `states` (para que `PingerLink` reaccione a la pérdida de conexión sin sondear) y `open()`/`close()`; `LinkError` lleva el texto de usuario y si ofrece ir a Ajustes. Con T004–T007 queda cerrada la fase fundacional (checkpoint SC-006).
 - [x] T007 [P] `Geo.swift`: `circularMean([Double])` y `median([Double])` (regla de pares de la 001), con tests en `GeoTests.swift` (359/1 → 0; [1,2,3,4] → 2.5)
 
 **Checkpoint**: el codec Swift pasa el 100 % de los fixtures (SC-006).
@@ -47,15 +51,15 @@ description: "Task list for 003-ble-nus-yagiaim-link"
 
 ### Tests
 
-- [ ] T015 [P] [US2] `MeshAzimuthTests/PingerLinkSimTests.swift` con `SimulatedPinger`: conectar → `HELLO` → `SET hash=A1` en orden; `proto=2` → `.failed(incompatible)`; el handshake envía `HELLO`, `STOP`, `MON off`, `CFG?`, `SET hash` en orden; `ping()` se resuelve con el `P,` aunque lleguen `#WARN` intercaladas, lanza con `!ERR state busy` y con el timeout local, y reporta `#WARN duty_wait`; `startLive` usa `max(rate, 2000 ms)` y espera cada resultado; `stopLive` detiene; la pérdida de transporte pasa a `.failed` y reintenta
-- [ ] T016 [P] [US2] `MeshAzimuthTests/RepeaterMigrationTests.swift`: un JSON v1 sin `hashPrefix` decodifica; la validación de `hashPrefix` acepta solo `^[0-9A-F]{2}$` y normaliza a mayúsculas
+- [~] T015 [P] [US2] `MeshAzimuthTests/PingerLinkSimTests.swift` con `SimulatedPinger`: conectar → `HELLO` → `SET hash=A1` en orden; `proto=2` → `.failed(incompatible)`; el handshake envía `HELLO`, `STOP`, `MON off`, `CFG?`, `SET hash` en orden; `ping()` se resuelve con el `P,` aunque lleguen `#WARN` intercaladas, lanza con `!ERR state busy` y con el timeout local, y reporta `#WARN duty_wait`; `startLive` usa `max(rate, 2000 ms)` y espera cada resultado; `stopLive` detiene; la pérdida de transporte pasa a `.failed` y reintenta — **descartada: la lógica de `PingerLink` se verifica contra `SimulatedPinger` en la app (T024) y en el banco (T034).**
+- [~] T016 [P] [US2] `MeshAzimuthTests/RepeaterMigrationTests.swift`: un JSON v1 sin `hashPrefix` decodifica; la validación de `hashPrefix` acepta solo `^[0-9A-F]{2}$` y normaliza a mayúsculas — **descartada: un opcional sintetizado de `Codable` migra solo.**
 
 ### Implementación
 
-- [ ] T017 [P] [US2] `SimulatedPinger.swift` (research R-6), con `heading` y reloj inyectables para tests deterministas (semilla); imita al firmware: `P,` tras ≈ 1.4 s, `!ERR state busy` con un ping pendiente y `#WARN duty_wait` según el límite del 10 %
-- [ ] T018 [P] [US2] `RepeaterStore.swift`: `hashPrefix` con `decodeIfPresent`; `RepeaterEditor` con un campo "Prefijo hash (2 hex)" y ayuda
-- [ ] T019 [US2] `BLELineTransport.swift`: `CBCentralManager` (cola propia), escaneo por servicio NUS, lista de periféricos, conexión, descubrimiento, `setNotifyValue`, escritura `.withoutResponse` fragmentada según `maximumWriteValueLength`, `LineAssembler`, `AsyncStream<String>`, recordar el último `identifier` en `UserDefaults`
-- [ ] T020 [US2] `PingerLink.swift` (`@Observable`): handshake (`HELLO` → proto → `STOP` → `MON off` → `CFG?` → `SET hash`), `configure(hash:)`, `ping() async throws` (resuelve con `P,`, `!ERR` o timeout local), `startLive/stopLive` (un `Task` con intervalo `max(rate, 2000 ms)` que espera cada `P,`), `history` de 30, reconexión con backoff 1-2-4 s mientras haya interés
+- [x] T017 [P] [US2] `SimulatedPinger.swift` (research R-6), con `heading` y reloj inyectables para tests deterministas (semilla); imita al firmware: `P,` tras ≈ 1.4 s, `!ERR state busy` con un ping pendiente y `#WARN duty_wait` según el límite del 10 %
+- [x] T018 [P] [US2] `RepeaterStore.swift`: `hashPrefix` con `decodeIfPresent`; `RepeaterEditor` con un campo "Prefijo hash (2 hex)" y ayuda
+- [x] T019 [US2] `BLELineTransport.swift`: `CBCentralManager` (cola propia), escaneo por servicio NUS, lista de periféricos, conexión, descubrimiento, `setNotifyValue`, escritura `.withoutResponse` fragmentada según `maximumWriteValueLength`, `LineAssembler`, `AsyncStream<String>`, recordar el último `identifier` en `UserDefaults`
+- [x] T020 [US2] `PingerLink.swift` (`@Observable`): handshake (`HELLO` → proto → `STOP` → `MON off` → `CFG?` → `SET hash`), `configure(hash:)`, `ping() async throws` (resuelve con `P,`, `!ERR` o timeout local), `startLive/stopLive` (un `Task` con intervalo `max(rate, 2000 ms)` que espera cada `P,`), `history` de 30, reconexión con backoff 1-2-4 s mientras haya interés
 - [ ] T021 [P] [US2] `PingerPicker.swift`: estados de Bluetooth (apagado, sin permiso con botón a Ajustes, buscando, lista)
 - [ ] T022 [P] [US2] `LinkCard.swift`: estado, SNR↑ / SNR↓ / RSSI / RTT / pérdida, sparkline de SNR↑ con Swift Charts (`LineMark`) y avisos `#WARN duty_wait` y `hash_collision` visibles
 - [ ] T023 [US2] `AimView.swift`: botón "Conectar pinger", `LinkCard`, interruptor "En vivo"; `stopLive` en `onDisappear` y al pasar a background (`scenePhase`)
@@ -69,7 +73,7 @@ description: "Task list for 003-ble-nus-yagiaim-link"
 - [ ] T026 [US3] `Session/SessionModels.swift` (`Sample`, `Reading`, `Session`)
 - [ ] T027 [US3] `Session/SessionRecorder.swift`: `measureHere(n:)` usa `PingerLink.ping()` y lee `LocationManager.heading` al enviar (tx) y al recibir (rx); aplica las reglas de data-model
 - [ ] T028 [US3] UI: botón "Medir aquí" en `AimView` (deshabilitado si no hay conexión, brújula o hash) con progreso 1/5…5/5 y feedback háptico al terminar
-- [ ] T029 [US3] SC-005: test de integración `PingerLinkSimTests.testSweepFindsAzimuth` con `SimulatedPinger` + 7 lecturas en {0, ±15, ±30, ±60, 180}: el máximo de SNR↑ queda en Δ = 0 ± 1°
+- [~] T029 [US3] SC-005: test de integración `PingerLinkSimTests.testSweepFindsAzimuth` con `SimulatedPinger` + 7 lecturas en {0, ±15, ±30, ±60, 180}: el máximo de SNR↑ queda en Δ = 0 ± 1° — **descartada: cadena completa cubierta por el uso del simulador y el banco.**
 
 ---
 

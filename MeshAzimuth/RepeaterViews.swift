@@ -131,6 +131,9 @@ struct RepeaterEditor: View {
     @State private var altitudeText = ""
     @State private var latText = ""
     @State private var lonText = ""
+    @State private var hashText = ""
+
+    private var hashValid: Bool { hashText.isEmpty || Repeater.normalizedHashPrefix(hashText) != nil }
 
     private static func parse(_ t: String) -> Double? { Double(t.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")) }
     private var lat: Double? { Self.parse(latText).flatMap { abs($0) <= 90 ? $0 : nil } }
@@ -150,6 +153,14 @@ struct RepeaterEditor: View {
                 } header: { Text("Opcional") } footer: {
                     Text("Si la indicas, se calcula el ángulo de elevación con corrección de curvatura (k = 4/3).")
                 }
+                Section {
+                    TextField("Prefijo hash (2 hex)", text: $hashText)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                    if !hashValid { Text("Deben ser exactamente 2 dígitos hexadecimales (0-9, A-F).").foregroundStyle(.red).font(.footnote) }
+                } header: { Text("Pinger LoRa (opcional)") } footer: {
+                    Text("Primer byte de la clave pública del repetidor (los dos primeros dígitos en la app MeshCore). El pinger lo usa para medir el enlace.")
+                }
             }
             .navigationTitle(isNew ? "Nuevo repetidor" : "Editar")
             .navigationBarTitleDisplayMode(.inline)
@@ -158,19 +169,21 @@ struct RepeaterEditor: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Guardar") {
                         repeater.altitude = Double(altitudeText.replacingOccurrences(of: ",", with: "."))
+                        repeater.hashPrefix = Repeater.normalizedHashPrefix(hashText)
                         repeater.latitude = lat ?? repeater.latitude
                         repeater.longitude = lon ?? repeater.longitude
                         // Se decide contra el store: si el id ya existe es edición, nunca un duplicado.
                         store.repeaters.contains { $0.id == repeater.id } ? store.update(repeater) : store.add(repeater)
                         dismiss()
                     }
-                    .disabled(repeater.name.isEmpty || lat == nil || lon == nil)
+                    .disabled(repeater.name.isEmpty || lat == nil || lon == nil || !hashValid)
                 }
             }
             .onAppear {
                 altitudeText = repeater.altitude.map { String($0) } ?? ""
                 latText = String(repeater.latitude)
                 lonText = String(repeater.longitude)
+                hashText = repeater.hashPrefix ?? ""
             }
         }
     }

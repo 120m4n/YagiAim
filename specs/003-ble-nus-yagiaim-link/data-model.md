@@ -55,9 +55,15 @@ struct PingResult: Equatable, Codable {
 
 ```swift
 protocol LineTransport: AnyObject {
-  var lines: AsyncStream<String> { get }   // líneas completas, sin \n
-  func send(_ line: String) async throws   // añade \n y fragmenta
-  var state: LinkState { get }             // .idle .scanning .connecting .ready .failed(Error)
+  var state: LinkState { get }                // .idle .scanning .connecting .ready .failed(LinkError)
+  var states: AsyncStream<LinkState> { get }  // cada transición, en orden; termina en close()
+  var lines: AsyncStream<String> { get }      // líneas completas, sin \n
+  func open() async throws                    // conecta hasta .ready o lanza LinkError
+  func close()
+  func send(_ line: String) async throws      // añade \n y fragmenta; LinkError si no está .ready
+}
+enum LinkError: Error, Equatable {            // .bluetoothOff .unauthorized .deviceNotFound .connectionLost
+  case incompatibleFirmware(proto: Int)       // .timeout .writeFailed; `message` y `opensSettings` para la UI
 }
 final class BLELineTransport: LineTransport   // CoreBluetooth
 final class SimulatedPinger: LineTransport    // R-6
@@ -74,7 +80,7 @@ final class SimulatedPinger: LineTransport    // R-6
 | history | RingBuffer<PingResult>(30) |
 | live | Bool |
 
-Métodos: `connect(to:)`, `disconnect()`, `configure(hash:)`, `ping() async throws -> PingResult`, `startLive()`, `stopLive()`.
+Métodos: `connect(device:hash:)`, `disconnect()`, `configure(hash:)`, `ping() async throws -> PingReport`, `startLive()`, `stopLive()`. `PingReport` = `PingResult` + `tTx`, `tRx` (instantes para `heading_tx`/`heading_rx`) y `dutyWait`. Una sola petición en vuelo: otra lanza `PingerError.requestInFlight`.
 
 - **Handshake** al conectar: `HELLO` → validar `proto=1` → `STOP` → `MON off` → `CFG?` (lee `rate`, `txp`) → `SET hash=XX`.
 - **`ping()`** envía `PING` y se resuelve con la primera de: la línea `P,` (única en vuelo, no hace falta correlacionar por `seq`), un `!ERR` (lanza el error) o un timeout local (timeout auto del pinger + 3 s). Registra si llegó un `#WARN duty_wait` en medio.
