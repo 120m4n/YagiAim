@@ -20,6 +20,8 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>MeshAzimuth se conecta al pinger LoRa para medir la calidad del enlace con el repetidor.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>MeshAzimuth usa tu ubicación para calcular el azimut y la distancia hacia el repetidor MeshCore.</string>
 	<key>UIApplicationSceneManifest</key>

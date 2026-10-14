@@ -26,6 +26,9 @@ targets:
         NSLocationWhenInUseUsageDescription: >-
           MeshAzimuth usa tu ubicación para calcular el azimut y la distancia
           hacia el repetidor MeshCore.
+        NSBluetoothAlwaysUsageDescription: >-
+          MeshAzimuth se conecta al pinger LoRa para medir la calidad del
+          enlace con el repetidor.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.electrosoftware.meshazimuth
@@ -34,7 +37,17 @@ targets:
   MeshAzimuthTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [MeshAzimuthTests]
+    sources:
+      - path: MeshAzimuthTests
+        excludes: ["Fixtures/**"]
+      # Copia de los fixtures de líneas del pinger (tools/sync_fixtures.sh), como carpeta de recursos:
+      # el bundle de tests contiene `lines/` (spec 003, research R-8).
+      - path: MeshAzimuthTests/Fixtures/lines
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES   # sin esto Xcode no puede firmar el bundle de tests
     dependencies:
       - target: MeshAzimuth
 schemes:

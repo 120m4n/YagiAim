@@ -13,7 +13,7 @@ description: "Task list for 003-ble-nus-yagiaim-link"
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] `project.yml`: `NSBluetoothAlwaysUsageDescription` ("MeshAzimuth se conecta al pinger LoRa para medir la calidad del enlace con el repetidor.") y la carpeta `Fixtures/lines` como recurso de `MeshAzimuthTests` (research R-8); `xcodegen generate`
+- [x] T001 [P] `project.yml`: `NSBluetoothAlwaysUsageDescription` ("MeshAzimuth se conecta al pinger LoRa para medir la calidad del enlace con el repetidor.") y la carpeta `Fixtures/lines` como recurso de `MeshAzimuthTests` (research R-8); `xcodegen generate` — **Hecho 2026-10-14:** además hubo que añadir `GENERATE_INFOPLIST_FILE: YES` al target de tests (Xcode no podía firmar el bundle sin `Info.plist`; ya fallaba antes). Verificado en el simulador `ref`: 5 tests pasan, el bundle de tests contiene `lines/` y la app lleva la clave de Bluetooth.
 - [ ] T002 [P] `Meshcore/variants/xiao_nrf52/platformio.ini` (env `Xiao_nrf52_trace_pinger`): añadir `BleTransport.cpp` al `build_src_filter`. Bluefruit ya viene en el framework fork (verificado: lo usa `SerialBLEInterface`)
 - [x] T003 ~~Refactor: mover `AimView` y vistas de repetidores fuera de `ContentView.swift`~~ **Ya hecho**: `AimView.swift` y `RepeaterViews.swift` existen por separado; no hay refactor que hacer
 
