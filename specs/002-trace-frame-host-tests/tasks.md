@@ -13,9 +13,9 @@ description: "Task list for 002-trace-frame-host-tests"
 
 ## Phase 1: Setup
 
-- [ ] T001 Ampliar `examples/trace_pinger/run_tests.sh` según research R-2: compilar una vez `src/Packet.cpp` y `src/Utils.cpp` (con `-I src -I test/mocks`) y enlazarlos con cada suite; aceptar filtros (`./run_tests.sh test_interop_packet …`); abortar con `not inside the Meshcore repo: src/Packet.cpp missing` si falta el core
-- [ ] T002 Test trivial `tests/test_interop_packet/test_smoke.cpp`: construye `mesh::Packet` con la API upstream y llama `readFrom` (el prototipo del 2026-10-14 ya lo demostró; este test lo deja como regresión)
-- [ ] T003 [P] Añadir `GTEST_SKIP()` al shim `tests/shim/gtest/gtest.h` (lo usa T016 si no hay `python3`)
+- [x] T001 Ampliar `examples/trace_pinger/run_tests.sh` según research R-2: compilar una vez `src/Packet.cpp` y `src/Utils.cpp` (con `-I src -I test/mocks`) y enlazarlos con cada suite; aceptar filtros (`./run_tests.sh test_interop_packet …`); abortar con `not inside the Meshcore repo: src/Packet.cpp missing` si falta el core
+- [x] T002 Test trivial `tests/test_interop_packet/test_smoke.cpp`: construye `mesh::Packet` con la API upstream y llama `readFrom` (el prototipo del 2026-10-14 ya lo demostró; este test lo deja como regresión)
+- [x] T003 [P] Añadir `GTEST_SKIP()` al shim `tests/shim/gtest/gtest.h` (lo usa T016 si no hay `python3`)
 
 ## Phase 2: Foundational
 
@@ -29,11 +29,11 @@ description: "Task list for 002-trace-frame-host-tests"
 
 ## Phase 3: User Story 1 — Interop con el parser upstream (P1) 🎯 MVP
 
-- [ ] T007 [P] [US1] `tests/test_interop_packet/test_build_vs_readfrom.cpp`: 10 000 `(tag,H)` con semilla `0x59414749` → `readFrom` y aserciones de US1-AS1
-- [ ] T008 [P] [US1] `tests/test_interop_packet/test_writeto_vs_parseecho.cpp`: q ∈ [−128,127] × 16 hashes → `writeTo` → `parseEcho` (US1-AS2)
-- [ ] T009 [P] [US1] `tests/test_interop_packet/test_byte_identity.cpp`: `build()` == `writeTo()` del `Packet` armado con la API upstream (US1-AS3)
-- [ ] T010 [P] [US1] `tests/test_interop_packet/test_rejections.cpp`: cada regla de rechazo, cruzada con `readFrom` cuando aplica, incluido `path_len=0xC1` (hash size 4 → `isValidPathLen` false) (US1-AS4)
-- [ ] T011 [US1] Corregir `buildRequest`/`parseEcho` (`tracecore/src/TraceFrame.cpp`) solo si T007–T010 fallan (el prototipo indica que ya pasan)
+- [x] T007 [P] [US1] `tests/test_interop_packet/test_build_vs_readfrom.cpp`: 10 000 `(tag,H)` con semilla `0x59414749` → `readFrom` y aserciones de US1-AS1
+- [x] T008 [P] [US1] `tests/test_interop_packet/test_writeto_vs_parseecho.cpp`: q ∈ [−128,127] × 16 hashes → `writeTo` → `parseEcho` (US1-AS2)
+- [x] T009 [P] [US1] `tests/test_interop_packet/test_byte_identity.cpp`: `build()` == `writeTo()` del `Packet` armado con la API upstream (US1-AS3)
+- [x] T010 [P] [US1] `tests/test_interop_packet/test_rejections.cpp`: cada regla de rechazo, cruzada con `readFrom` cuando aplica, incluido `path_len=0xC1` (hash size 4 → `isValidPathLen` false) (US1-AS4)
+- [x] T011 [US1] Corregir `buildRequest`/`parseEcho` (`tracecore/src/TraceFrame.cpp`) solo si T007–T010 fallan (el prototipo indica que ya pasan)
 
 ---
 
