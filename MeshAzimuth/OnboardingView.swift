@@ -11,7 +11,7 @@ struct OnboardingView: View {
         ("iphone.gen3", "Coloca el teléfono",
          "Ponlo plano sobre el boom, con el borde superior hacia el director. Aléjalo de mástiles, coaxial y del imán del rotor. Si la precisión de la brújula pasa de ±15°, muévelo en forma de ocho."),
         ("scope", "Gira hasta el verde",
-         "La aguja naranja apunta al repetidor. Al alinearte se pone verde y vibra 3 segundos. Ajusta el último tramo por RSSI/SNR del companion."),
+         "La aguja naranja apunta al repetidor. Al alinearte se pone verde y vibra 3 segundos. Para el ajuste fino, conecta el pinger LoRa y mira el SNR en vivo."),
     ]
 
     var body: some View {
