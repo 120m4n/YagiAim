@@ -23,7 +23,7 @@ description: "Task list for 003-ble-nus-yagiaim-link"
 - [ ] T004 [P] Test `MeshAzimuthTests/LineCodecTests.swift`: recorre `Fixtures/lines/events_*.txt` e `info.txt` y compara el JSON con `PingerEvent` (incluida la línea `S,` con `busy`); las `reply` de `commands.txt` se parsean como `.ok`/`.warn`/`.error`; prefijos desconocidos → `.unknown`; caso de reensamblado (`"P,1,AB"` + `"CD…\nP,2…"`) → 2 líneas
 - [ ] T005 [P] `MeshAzimuth/Link/LineCodec.swift`: `parse(_ line:) -> PingerEvent` y `LineAssembler` (buffer → líneas completas, tope 160 B, descarte en overflow)
 - [ ] T006 [P] `MeshAzimuth/Link/LineTransport.swift`: protocolo `LineTransport` y `LinkState`
-- [ ] T007 [P] `Geo.swift`: `circularMean([Double])` y `median([Double])` (regla de pares de la 001), con tests en `GeoTests.swift` (359/1 → 0; [1,2,3,4] → 2.5)
+- [x] T007 [P] `Geo.swift`: `circularMean([Double])` y `median([Double])` (regla de pares de la 001), con tests en `GeoTests.swift` (359/1 → 0; [1,2,3,4] → 2.5)
 
 **Checkpoint**: el codec Swift pasa el 100 % de los fixtures (SC-006).
 

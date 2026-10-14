@@ -46,9 +46,29 @@ enum Geo {
         return abs(delta) <= (wasAligned ? tolerance + exitMargin : tolerance)
     }
 
+    /// Lleva un ángulo a [0, 360). Un negativo diminuto (-1e-18) no debe dar 360.0 por redondeo.
     static func normalize(_ deg: Double) -> Double {
         let r = deg.truncatingRemainder(dividingBy: 360)
-        return r < 0 ? r + 360 : r
+        let n = r < 0 ? r + 360 : r
+        return n >= 360 ? 0 : n
+    }
+
+    /// Rumbo medio circular en [0, 360): atan2(Σ sin, Σ cos). 359° y 1° dan 0°, no 180° (research R-5).
+    /// nil si no hay datos o si los vectores se anulan (p. ej. 0° y 180°): entonces no existe un rumbo medio.
+    static func circularMean(_ degrees: [Double]) -> Double? {
+        guard !degrees.isEmpty else { return nil }
+        let s = degrees.reduce(0) { $0 + sin($1.rad) }
+        let c = degrees.reduce(0) { $0 + cos($1.rad) }
+        guard hypot(s, c) > 1e-9 else { return nil }
+        return normalize(atan2(s, c).deg)
+    }
+
+    /// Mediana; con n par, el promedio de los dos centrales (misma regla que la línea `S,` del pinger).
+    static func median(_ values: [Double]) -> Double? {
+        guard !values.isEmpty else { return nil }
+        let v = values.sorted()
+        let m = v.count / 2
+        return v.count % 2 == 1 ? v[m] : (v[m - 1] + v[m]) / 2
     }
 
     static func cardinal(_ deg: Double) -> String {

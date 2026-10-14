@@ -40,4 +40,56 @@ final class GeoTests: XCTestCase {
         XCTAssertFalse(Geo.isAligned(delta: 5.5, tolerance: 3, wasAligned: true))
         XCTAssertFalse(Geo.isAligned(delta: nil, tolerance: 3, wasAligned: true))
     }
+
+    // MARK: - normalize (borde)
+
+    func testNormalizeNeverReturns360() {
+        XCTAssertEqual(Geo.normalize(-1e-18), 0)   // r + 360 se redondea a 360.0 exacto
+        XCTAssertEqual(Geo.normalize(360), 0)
+        XCTAssertEqual(Geo.normalize(-90), 270, accuracy: 1e-9)
+    }
+
+    // MARK: - circularMean (research R-5)
+
+    func testCircularMeanAcrossNorth() {
+        XCTAssertEqual(Geo.circularMean([359, 1])!, 0, accuracy: 1e-9)       // no 180
+        XCTAssertEqual(Geo.circularMean([358, 2, 0])!, 0, accuracy: 1e-9)
+        // 350° y 10° se anulan en seno; con 30°: atan2(0.5, 2.8356) = 10° (el promedio aritmético daría 130°)
+        XCTAssertEqual(Geo.circularMean([350, 10, 30])!, 10, accuracy: 1e-9)
+    }
+
+    func testCircularMeanOrdinaryCases() {
+        XCTAssertEqual(Geo.circularMean([10, 20, 30])!, 20, accuracy: 1e-9)
+        XCTAssertEqual(Geo.circularMean([90])!, 90, accuracy: 1e-9)
+        XCTAssertEqual(Geo.circularMean([270, 270])!, 270, accuracy: 1e-9)
+    }
+
+    func testCircularMeanResultIsInZeroTo360() {
+        for set in [[359.0, 1], [355, 5, 0], [180, 181], [0.0001, 359.9999]] {
+            let m = Geo.circularMean(set)!
+            XCTAssertTrue(m >= 0 && m < 360, "\(set) -> \(m)")
+        }
+    }
+
+    func testCircularMeanUndefinedCases() {
+        XCTAssertNil(Geo.circularMean([]))
+        XCTAssertNil(Geo.circularMean([0, 180]))     // vectores opuestos: no hay rumbo medio
+    }
+
+    // MARK: - median (misma regla que la línea S de la 001)
+
+    func testMedianOddEvenSingleEmpty() {
+        XCTAssertEqual(Geo.median([3, 1, 2]), 2)
+        XCTAssertEqual(Geo.median([1, 2, 3, 4]), 2.5)           // n par: promedio de los centrales
+        XCTAssertEqual(Geo.median([5]), 5)
+        XCTAssertNil(Geo.median([]))
+    }
+
+    func testMedianWithNegativesAndUnsortedInput() {
+        XCTAssertEqual(Geo.median([-4.5, -6.25])!, -5.375, accuracy: 1e-12)
+        XCTAssertEqual(Geo.median([9.0, -3, 4, 4, 100])!, 4)
+        let input = [3.0, 1, 2]
+        _ = Geo.median(input)
+        XCTAssertEqual(input, [3, 1, 2])                        // no muta la entrada
+    }
 }
