@@ -30,7 +30,7 @@ Cada fragmento se extrae por **anclas de texto**, no por número de línea, para
 {
   "commit": "362ea302",
   "fragments": {
-    "W1": {"sha256": "…", "chars": 1234},
+    "W1": {"sha256": "…", "chars": 845, "text": "<fragmento normalizado>"},
     …
   }
 }

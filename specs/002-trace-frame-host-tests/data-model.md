@@ -37,4 +37,4 @@ Parser de fixtures para C++: `tests/support/Fixtures.{h,cpp}` con un mini-parser
   "fragments": { "W1": {"file":"src/Mesh.cpp","sha256":"…","chars":0}, … } }
 ```
 
-`commit` es informativo: cambia con cada commit del fork. El guardián compara solo los hashes de los fragmentos.
+`commit` es informativo: cambia con cada commit del fork. El guardián compara solo los hashes de los fragmentos. Cada fragmento guarda también su `text` normalizado: así el guardián puede mostrar un diff legible cuando algo cambia (el hash solo no lo permite).

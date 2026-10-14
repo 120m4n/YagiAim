@@ -41,14 +41,14 @@ description: "Task list for 002-trace-frame-host-tests"
 
 ### Modelo
 
-- [ ] T012 [P] [US2] `tests/test_repeater_model/test_repeater_model.cpp`: US2-AS1…AS5 (reenvío, no-match, eco final, dedupe por tag, ida y vuelta completa con `parseEcho`). Incluye `snr=-6.3` → `q=-25` (truncamiento) y `disable_fwd=true` → `Release`
-- [ ] T013 [US2] `tests/support/RepeaterModel.{h,cpp}` según data-model, citando el origen (FR-003)
+- [x] T012 [P] [US2] `tests/test_repeater_model/test_repeater_model.cpp`: US2-AS1…AS5 (reenvío, no-match, eco final, dedupe por tag, ida y vuelta completa con `parseEcho`). Incluye `snr=-6.3` → `q=-25` (truncamiento) y `disable_fwd=true` → `Release`
+- [x] T013 [US2] `tests/support/RepeaterModel.{h,cpp}` según data-model, citando el origen (FR-003)
 
 ### Guardián
 
-- [ ] T014 [P] [US2] `tools/check_upstream_trace.py`: anclas W1–W10 de `contracts/upstream-watch.md`, normalización, `--root`, `--lock`, `--update`; diff unificado por `stderr`; códigos de salida 0/1/2 (2 = ancla no encontrada)
-- [ ] T015 [US2] Generar `tests/upstream-trace.lock` con `--update` sobre `362ea302` y commitearlo
-- [ ] T016 [US2] `tests/test_upstream_guard/test_upstream_guard.cpp`: (a) el script sale 0 sobre el core actual; (b) mutación dentro de W1 en una copia temporal → ≠ 0; (c) mutación fuera de los fragmentos → 0; (d) ancla borrada → 2; `GTEST_SKIP` si no hay `python3` (research R-5)
+- [x] T014 [P] [US2] `tools/check_upstream_trace.py`: anclas W1–W10 de `contracts/upstream-watch.md`, normalización, `--root`, `--lock`, `--update`; diff unificado por `stderr`; códigos de salida 0/1/2 (2 = ancla no encontrada)
+- [x] T015 [US2] Generar `tests/upstream-trace.lock` con `--update` sobre `362ea302` y commitearlo
+- [x] T016 [US2] `tests/test_upstream_guard/test_upstream_guard.cpp`: (a) el script sale 0 sobre el core actual; (b) mutación dentro de W1 en una copia temporal → ≠ 0; (c) mutación fuera de los fragmentos → 0; (d) ancla borrada → 2; `GTEST_SKIP` si no hay `python3` (research R-5)
 - [ ] T017 [US2] **DIFERIDO**: paso del guardián en CI. Añadir un workflow al fork toca archivos fuera de `examples/trace_pinger/`; mientras tanto el guardián corre desde `run_tests.sh` (T016)
 
 ---
