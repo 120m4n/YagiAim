@@ -1,6 +1,6 @@
 # Contrato: formato de fixtures
 
-UTF-8, una entrada por línea: `<payload>\t<json>`. Las líneas que empiezan con `#` son comentarios. Las vacías se ignoran.
+UTF-8, una entrada por línea: `<payload>\t<json>`. Un comentario es una línea que empieza con `#` seguido de espacio (o `#` solo): las líneas del protocolo `#HELLO`, `#CFG`, `#OK` y `#WARN` no lo son. Las vacías se ignoran.
 
 ## Tramas — `examples/trace_pinger/tests/fixtures/frames/*.txt`
 
@@ -32,5 +32,17 @@ P,18,0A1B2C3D,timeout,,,,,0	{"type":"P","seq":18,"tag":"0A1B2C3D","status":"time
 S,5,5,0,-6.25,-4.50,-108.0,0	{"type":"S","n":5,"ok":5,"loss_pct":0,"med_snr_up":-6.25,"med_snr_dn":-4.5,"med_rssi_dn":-108.0,"busy":0}
 SET rate=200	{"cmd":"SET","key":"rate","error":"range"}
 ```
+
+### Archivos y esquema del JSON
+
+| Archivo | `<payload>` | JSON esperado |
+|---|---|---|
+| `events_p.txt` | línea `P,…` | `type:"P"`, `seq`, `tag`, `status`, y si `ok`: `rtt_ms`, `snr_up`, `snr_dn` (dB), `rssi_dn` (dBm); `n_resp`. Los campos vacíos de la línea no aparecen en el JSON |
+| `events_s.txt` | línea `S,…` | `type:"S"`, `n`, `ok`, `busy`, `timeouts` (lo usa el formateador C++; la línea solo lleva `loss_pct`), y si existen `loss_pct`, `med_snr_up`, `med_snr_dn`, `med_rssi_dn` |
+| `events_r.txt` | línea `R,…` | `type:"R"`, `t_ms`, `rssi`, `snr`, `hex` (tal como aparece en la línea, con `..` si se truncó); si es truncada: `truncated:true` y `total_len` (el formateador recibe `total_len` bytes `0xAB`) |
+| `info.txt` | `#HELLO`, `#CFG`, `#OK`, `#WARN` o `!ERR` | `type` ∈ `HELLO`, `CFG`, `OK`, `WARN`, `ERR` y sus campos (`code`, `detail`, …). Lo consume el parser del host (iOS); el lado C++ solo comprueba que están bien formadas, porque las produce a través de `commands.txt` |
+| `commands.txt` | comando | `cmd`, `reply` (primera línea que emite el pinger), `reply2` opcional, `setup` opcional (`nohash`, `mon` o `pending`), `error` opcional (código) |
+
+`commands.txt` cubre todos los `!ERR` que emite el firmware. `!ERR radio` figura en el contrato del protocolo pero ningún camino de `tracecore` lo emite todavía.
 
 Los consumidores son `tracecore` (gtest, en esta fase) e `MeshAzimuthTests` (XCTest, fase 003). El directorio se copia como recurso del bundle de tests de iOS mediante una referencia de carpeta en `project.yml`.

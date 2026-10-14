@@ -81,7 +81,7 @@ R,123456,-108.0,-4.50,2601E7123456780000000000A1
 ```
 #HELLO …   #CFG …   #OK …
 #WARN <code> [detalle]        códigos: hash_collision, snr_saturated, cfg_reset, hash_suspicious, duty_wait <ms>
-!ERR <code> [detalle]         códigos: syntax, unknown, range, state (`nohash`, `mon`, `busy`), radio
+!ERR <code> [detalle]         códigos: syntax, unknown, range, state (`nohash`, `mon`, `busy`, `flash`), radio
 ```
 
 ## Reglas

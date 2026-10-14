@@ -63,7 +63,7 @@ description: "Task list for 002-trace-frame-host-tests"
 
 ## Phase 6: User Story 4 — Paridad de codec de líneas (P3)
 
-- [ ] T021 [P] [US4] `tests/fixtures/lines/{commands,events_p,events_s,events_r,info}.txt` cubriendo todos los ejemplos de `001/contracts/line-protocol.md` y todos los `!ERR`
+- [x] T021 [P] [US4] `tests/fixtures/lines/{commands,events_p,events_s,events_r,info}.txt` cubriendo todos los ejemplos de `001/contracts/line-protocol.md` y todos los `!ERR`
 - [ ] T022 [US4] `tests/test_line_fixtures/test_line_fixtures.cpp`: JSON → struct → `LineCodec::format*` == línea; comando → resultado esperado
 
 ---
