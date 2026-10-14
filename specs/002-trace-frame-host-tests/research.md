@@ -10,33 +10,23 @@
 - *Compilar `Mesh.cpp` con stubs de todas sus dependencias*: unas 500 líneas de stubs frágiles que se rompen con cada refactor upstream.
 - *Repetidor real en un segundo XIAO como "test de integración HIL"*: valioso, pero es un test de campo y no corre en CI. Queda cubierto por US3 (fixtures) y por el banco de la 001.
 
-## R-2 Reutilizar el `env:native` de upstream
+## R-2 Compilar `Packet.cpp` real en host
 
-**Decision**: Replicar su configuración en `firmware/pinger/platformio.ini`:
+**Decision**: `run_tests.sh` compila una vez `src/Packet.cpp` y `src/Utils.cpp` de la raíz de Meshcore (`../..` desde `examples/trace_pinger`) con los mocks de `test/mocks`, y enlaza ese objeto con cada suite:
 
-```ini
-[env:native]
-platform = native
-test_framework = googletest
-build_flags = -std=c++17
-  -I ../../third_party/MeshCore/src
-  -I ../../third_party/MeshCore/test/mocks
-  -I lib/tracecore/include
-  -I test/support
-test_build_src = yes
-build_src_filter = -<*>
-  +<../../../third_party/MeshCore/src/Packet.cpp>
-  +<../test/support/*.cpp>
-lib_deps = google/googletest @ 1.17.0
+```sh
+c++ -std=c++17 -I src -I test/mocks -I examples/trace_pinger/tracecore/include \
+    -I examples/trace_pinger/tests/shim -I examples/trace_pinger/tests/support \
+    <suite>/*.cpp tracecore/src/*.cpp <core.o>
 ```
 
-**Rationale**: Upstream ya demuestra que `Packet.cpp` compila con esos mocks (`SHA256.h` determinista). `tracecore` entra como librería local (`lib/`) y PlatformIO la enlaza sola. **Riesgo**: las rutas relativas de `build_src_filter` fuera de `src_dir` son delicadas en PlatformIO. Plan B: script `extra_scripts` que añade `Packet.cpp` con `env.BuildSources()`.
+**Rationale**: El `[env:native]` del repo ya compila `Packet.cpp` con esos mocks, pero ampliarlo exige tocar el `platformio.ini` raíz, y la regla es no modificar nada fuera de `examples/trace_pinger/` salvo el env del pinger. **Riesgo cerrado** (2026-10-14): un prototipo compiló `Packet.cpp` + `Utils.cpp` + `TraceFrame.cpp` en host y comprobó `readFrom` de la petición, identidad de bytes con `writeTo`, `parseEcho` del eco con SNR −6.3 → −25 e `isValidPathLen(0xC1)==false`.
 
 ## R-3 Guardián: Python vs. gtest
 
 **Decision**: Un script Python (`tools/check_upstream_trace.py`, solo stdlib) como fuente de verdad, invocado:
-1. en CI como paso independiente;
-2. desde un test gtest (`test_upstream_guard`) con `std::system()`, para que `pio test` también lo ejecute.
+1. a mano (`python3 tools/check_upstream_trace.py`);
+2. desde un test (`test_upstream_guard`) con `std::system()`, para que `run_tests.sh` también lo ejecute. El paso de CI queda diferido (T017).
 
 Si `python3` no está disponible, el test se salta con `GTEST_SKIP` y lo indica en el mensaje.
 

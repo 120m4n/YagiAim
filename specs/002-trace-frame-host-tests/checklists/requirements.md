@@ -12,10 +12,11 @@
 
 - [x] Sin [NEEDS CLARIFICATION]
 - [x] Requisitos testeables y criterios medibles (SC-001…SC-004)
-- [x] Casos borde (submódulo ausente, formato upstream, mocks)
+- [x] Casos borde (ejecución fuera del repo Meshcore, formato upstream, mocks)
 - [x] Alcance: fuera queda compilar `Mesh.cpp` real
 
 ## Feature Readiness
 
 - [x] FR → tareas (tabla en tasks.md)
-- [x] Listo para `/speckit.implement` (US1/US2); US3 queda a la espera de capturas
+- [x] Listo para construir (US1/US2). US3 requiere el XIAO conectado (T019)
+- [x] 2026-10-14: revisada contra el repo real (rutas, API de `tracecore`, línea `S` con `busy`, sin submódulo ni CI) y con prototipo de interoperabilidad verde

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Suite gtest en `env:native` que enlaza `Packet.cpp` real de MeshCore (submódulo fijado) con `tracecore`, más:
+Suite gtest, corrida por `run_tests.sh`, que enlaza el `Packet.cpp` real del core de Meshcore (mismo repo) con `tracecore`, más:
 - un `RepeaterModel` que reproduce la decisión TRACE de `Mesh.cpp`;
 - un guardián Python que falla si cambian los fragmentos upstream de los que dependemos;
 - tests dirigidos por fixtures de campo y de líneas.
@@ -15,19 +15,19 @@ Suite gtest en `env:native` que enlaza `Packet.cpp` real de MeshCore (submódulo
 
 **Language/Version**: C++17 (g++ ≥ 11 o clang ≥ 14), Python 3.10+ (solo stdlib)
 
-**Primary Dependencies**: GoogleTest 1.17 (vía PlatformIO); `third_party/MeshCore@a366955` (`src/Packet.cpp`, `test/mocks/*`)
+**Primary Dependencies**: gtest mínimo incluido (`tests/shim`, sin instalar nada); `src/Packet.cpp`, `src/Utils.cpp` y `test/mocks/*` de la raíz de Meshcore @ `362ea302`
 
-**Storage**: archivos de fixtures y lock JSON en `firmware/pinger/test/`
+**Storage**: archivos de fixtures y lock JSON en `examples/trace_pinger/tests/`
 
-**Testing**: `pio test -e native`; `python3 firmware/pinger/tools/check_upstream_trace.py`
+**Testing**: `examples/trace_pinger/run_tests.sh`; `python3 examples/trace_pinger/tools/check_upstream_trace.py`
 
-**Target Platform**: Linux/macOS (desarrollo y CI con GitHub Actions `ubuntu-latest`)
+**Target Platform**: macOS/Linux (desarrollo local; CI diferido)
 
 **Project Type**: suite de tests y tooling
 
 **Performance Goals**: suite < 10 s
 
-**Constraints**: sin dependencias nuevas fuera de gtest; no modificar el submódulo
+**Constraints**: sin dependencias nuevas; no modificar nada del repo Meshcore fuera de `examples/trace_pinger/`
 
 **Scale/Scope**: unos 6 archivos de test, 1 modelo, 1 script, 2 directorios de fixtures
 
@@ -39,7 +39,7 @@ Suite gtest en `env:native` que enlaza `Packet.cpp` real de MeshCore (submódulo
 | II. Buen ciudadano | ✅ | US2-AS3 prueba que el eco no se propaga; US2-AS4 que el tag repetido se descarta |
 | III. Núcleo puro | ✅ | Compilar `tracecore` en host junto a `Packet.cpp` es la prueba de pureza |
 | IV. Protocolo único | ✅ | US4: fixtures de líneas compartidos |
-| V. Test-first | ✅ | La feature es de tests; los de interoperabilidad pueden ir antes que T015/T016 de la 001 |
+| V. Test-first | ✅ | La feature es de tests; la 001 ya está implementada, así que los tests nuevos se escriben primero y se corrige `tracecore` solo si fallan |
 | VI. Simplicidad | ✅ | Sin libs nuevas: mini-parser JSON propio de unas 80 líneas, justificado frente a añadir nlohmann/json (≈ 25 k líneas) |
 
 ## Project Structure
@@ -58,10 +58,10 @@ specs/002-trace-frame-host-tests/
 ### Source Code (repository root)
 
 ```text
-firmware/pinger/
-├── platformio.ini                       # env:native ampliado (R-2)
+examples/trace_pinger/
+├── run_tests.sh                         # compila core + tracecore + suites (R-2)
 ├── tools/check_upstream_trace.py        # guardián (W1–W10)
-└── test/
+└── tests/
     ├── upstream-trace.lock
     ├── support/
     │   ├── RepeaterModel.{h,cpp}
@@ -75,10 +75,10 @@ firmware/pinger/
     ├── test_upstream_guard/             # US2 (guardián + mutación)
     ├── test_field_frames/               # US3
     └── test_line_fixtures/              # US4
-.github/workflows/firmware.yml           # + paso del guardián
+(CI diferido: ver tasks T017)
 ```
 
-**Structure Decision**: Todo dentro del proyecto PlatformIO del pinger. Un solo `pio test -e native` corre los tests unitarios de la 001 y los de interoperabilidad de esta fase.
+**Structure Decision**: Todo dentro de `examples/trace_pinger/` del repo Meshcore. Un solo `run_tests.sh` corre los tests unitarios de la 001 y los de interoperabilidad de esta fase.
 
 ## Complexity Tracking
 

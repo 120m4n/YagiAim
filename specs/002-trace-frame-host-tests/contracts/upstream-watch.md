@@ -1,6 +1,6 @@
 # Contrato: fragmentos upstream vigilados
 
-Commit base: `a366955` (meshcore-dev/MeshCore, 2026-09-30).
+Referencia: fork local `/Users/120m4n/GitHub/Meshcore` @ `362ea302` (rama `feature/i2c-actuator-public-channel`). Las rutas de la tabla son relativas a la raíz de ese repo. Anclas verificadas el 2026-10-14: las 10 existen exactamente una vez.
 
 Cada fragmento se extrae por **anclas de texto**, no por número de línea, para que un cambio no relacionado que desplace líneas no dispare el guardián.
 
@@ -25,10 +25,10 @@ Cada fragmento se extrae por **anclas de texto**, no por número de línea, para
 
 ## Lock
 
-`firmware/pinger/test/upstream-trace.lock` (JSON):
+`examples/trace_pinger/tests/upstream-trace.lock` (JSON):
 ```json
 {
-  "commit": "a366955",
+  "commit": "362ea302",
   "fragments": {
     "W1": {"sha256": "…", "chars": 1234},
     …
@@ -36,10 +36,10 @@ Cada fragmento se extrae por **anclas de texto**, no por número de línea, para
 }
 ```
 
-## Procedimiento de actualización (bump del submódulo)
+## Procedimiento de actualización (traer cambios de upstream al fork)
 
-1. `git -C third_party/MeshCore fetch && git -C third_party/MeshCore checkout <nuevo>`
-2. `python3 firmware/pinger/tools/check_upstream_trace.py`: si falla, leer el diff.
+1. Traer upstream al fork (`git fetch upstream && git merge upstream/main`, o rebase).
+2. `python3 examples/trace_pinger/tools/check_upstream_trace.py`: si falla, leer el diff.
 3. Si el cambio afecta la semántica: actualizar `RepeaterModel`, el contrato de trama de la 001 y los tests.
-4. `python3 firmware/pinger/tools/check_upstream_trace.py --update`
-5. PR con título `bump(MeshCore): a366955 → <nuevo>` y el resumen del diff.
+4. `python3 examples/trace_pinger/tools/check_upstream_trace.py --update`
+5. Commit `bump(guard): <resumen del diff>`.
