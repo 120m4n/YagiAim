@@ -1,6 +1,6 @@
 # Contrato: correspondencia de plataforma iOS → Android
 
-Cada entrada describe una API de iOS que usa la referencia, la API de Android que la reemplaza, en qué **difiere su semántica** y cómo se iguala el comportamiento observable. Las entradas con `C-x` no se implementan hasta resolver esa clarificación de `spec.md`.
+Cada entrada describe una API de iOS que usa la referencia, la API de Android que la reemplaza, en qué **difiere su semántica** y cómo se iguala el comportamiento observable. Las decisiones de la sesión de clarificación del 2026-10-14 (`spec.md`) ya están aplicadas; las divergencias que implican están marcadas como **Divergencia aceptada**.
 
 Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia** · **Resolución** · **Verificación**.
 
@@ -10,7 +10,7 @@ Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia**
 
 - **Origen**: `MapView.swift` L4–41, L96–108.
 - **iOS**: `MKTileOverlay` con `canReplaceMapContent`, `URLCache` (20 MB en memoria, 500 MB en disco). Usa la política HTTP normal y, si falla la red, reintenta con `.returnCacheDataDontLoad` (sirve teselas vencidas). Cabecera `User-Agent` propia y `maximumZ = 19`.
-- **Android**: motor de mapa según C-3, con una fuente ráster OSM (`tileSize` 256, `maxzoom` 19).
+- **Android**: MapLibre React Native con una fuente ráster OSM (`tileSize` 256, `maxzoom` 19): **las mismas teselas que iOS**.
 - **Diferencia**: los motores tienen caché propia (por ejemplo, la *ambient cache* de MapLibre, 50 MB por defecto) con su propia política de vencimiento y sin "servir vencido sin red" garantizado.
 - **Resolución**:
   - Caché configurada a 500 MB.
@@ -21,12 +21,16 @@ Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia**
   - Si el motor elegido no permite servir vencido sin red, se intercepta la carga de teselas con un manejador propio (equivalente a `loadTile`).
 - **Verificación**: modo avión tras recorrer una zona → las teselas siguen visibles; el tamaño reportado crece y vuelve a "Zero KB" tras borrar (FS-10).
 
-### PM-02 Mapa satélite — `C-3`
+### PM-02 Mapa satélite — divergencia aceptada (C-3)
 
 - **Origen**: `MapView.swift` L97–100.
 - **iOS**: `mapType = .hybrid`: imágenes satelitales de Apple con etiquetas y carreteras, solo con red.
 - **Android**: no existe Apple Maps.
-- **Resolución**: proveedor y motor según C-3. En cualquier caso: el mismo botón y la misma persistencia (`map.satellite`), sin atribución OSM en modo satélite (`ContentView.swift` L49–57) y con la atribución que exija el proveedor elegido (es una obligación legal, no una función nueva).
+- **Resolución** (requisito del dueño: libre, sin API key ni pago):
+  - Imagen: **EOX Sentinel-2 cloudless 2016** por WMTS público, licencia CC BY 4.0 (sin restricción comercial). El identificador de capa y la plantilla de URL se toman del documento `GetCapabilities` del servicio en T070; no se fijan aquí de memoria.
+  - Etiquetas y vías: **OpenFreeMap** (teselas vectoriales OpenMapTiles con datos OSM; sin registro, sin API key, uso comercial permitido) con un estilo que solo dibuja vías y rótulos sobre la imagen, para imitar el híbrido de Apple.
+  - Mismo botón y misma persistencia (`map.satellite`). Sin la atribución OSM propia del modo estándar (`ContentView.swift` L49–57); en su lugar, la atribución que exigen las licencias: `EOxCloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016 & 2017)` y `© OpenFreeMap © OpenMapTiles © OpenStreetMap contributors`. Es una obligación legal, no una función nueva.
+- **Divergencia aceptada**: la resolución del satélite es de 10 m, frente a la imagen submétrica de Apple. Por encima del zoom ≈ 14 la imagen se ve borrosa; las vías y rótulos vectoriales siguen nítidos.
 - **Verificación**: visual con la zona del mapa enmascarada (VA-4).
 
 ### PM-03 Seguimiento de usuario
@@ -51,15 +55,13 @@ Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia**
 
 - **Origen**: `LocationManager.swift` L114–138.
 - **iOS**: `CLHeading.trueHeading` (≥ 0 solo si Core Location conoce la ubicación), `magneticHeading`, `headingAccuracy` en grados, `headingFilter = 0.5`.
-- **Android**: módulo nativo `HeadingModule` (Kotlin):
-  - `TYPE_ROTATION_VECTOR` → `getRotationMatrixFromVector` → `getOrientation` → azimut magnético;
-  - declinación con `GeomagneticField(lat, lon, altMSL, now)`;
-  - verdadero = magnético + declinación.
+- **Android**: **Fused Orientation Provider** (FOP, `play-services-location` ≥ 21.2) en el módulo `heading` (Kotlin). FOP tiene la misma semántica que `CLHeading`: rumbo referido al norte verdadero cuando conoce la declinación y al magnético cuando no hay ubicación, más el error del rumbo (`headingErrorDegrees`). Respaldo, en dispositivos sin giroscopio o sin Play Services: `TYPE_ROTATION_VECTOR` → `getOrientation` + `GeomagneticField`, con precisión de `values[4]` o `-1` si no existe (C-5).
 - **Diferencias**:
   1. "Conoce la ubicación": en iOS cuenta la caché del sistema.
   2. iOS entrega eventos a su propio ritmo y el EMA (α = 0.25 **por evento**) depende de ese ritmo.
   3. `headingFilter` se aplica a lo que entrega Core Location (antes del suavizado de la app).
 - **Resolución**:
+  0. Que `headingErrorDegrees` venga en grados y cómo indica FOP el uso del norte magnético se **verifica en dispositivo** (T081). Si FOP no lo indica, `usingMagneticFallback` = no hay fix de ubicación del sistema.
   1. Hay rumbo verdadero si el sistema tiene **algún** fix (incluido `getLastLocation()` del proveedor fusionado). La ubicación persistida por la app (`location.last`) **no** cuenta, porque Core Location tampoco la conoce.
   2. El ritmo de eventos se ajusta para que la **respuesta a un escalón** del rumbo suavizado coincida con iOS (ver research R-3: se mide en iOS y se fija la tasa de muestreo).
   3. El módulo nativo emite solo cuando el azimut crudo cambia ≥ 0.5° respecto al último emitido.
@@ -78,7 +80,7 @@ Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia**
 
 - **Origen**: `MotionManager.swift`.
 - **iOS**: `CMMotionManager.deviceMotion.attitude.pitch` (rad → °), 10 Hz, EMA 0.3; positivo = el frente sube.
-- **Android**: `HeadingModule` con el mismo vector de rotación: `pitch = −orientation[1]` en grados (en Android el signo es el opuesto: levantar el borde superior da negativo), 10 Hz, EMA 0.3 en JS.
+- **Android**: módulo `heading`, a partir del mismo cuaternión de FOP (o del vector de rotación en el respaldo): `pitch = −orientation[1]` en grados (en Android el signo es el opuesto: levantar el borde superior da negativo), 10 Hz, EMA 0.3 en JS.
 - **Resolución y verificación**: test de signo (levantar el frente 10° → +10 ± 1°) y SC-004.
 
 ### PM-08 Altitud sobre el nivel del mar
@@ -206,7 +208,7 @@ Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia**
 
 ### PM-21 Fechas según la configuración regional
 
-- Ver FS-07 y C-9.
+- Ver FS-07. Región de referencia: `es_CO` (C-9).
 
 ### PM-22 Tamaño de texto del sistema
 
@@ -218,3 +220,28 @@ Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia**
 
 - **Origen**: `accessibilityLabel` en la brújula y en el botón de seguimiento; el resto son textos visibles.
 - **Android**: `accessibilityLabel` con los mismos textos; TalkBack lee lo mismo que VoiceOver en esos dos controles.
+
+### PM-24 Diálogo de calibración de la brújula — divergencia aceptada (C-6)
+
+- **Origen**: `LocationManager.swift` L140–142 (`locationManagerShouldDisplayHeadingCalibration`).
+- **iOS**: el sistema muestra su diálogo de calibración (movimiento en ocho) cuando la precisión es negativa o peor que 15°, en cualquier pantalla.
+- **Android**: no existe un equivalente del sistema.
+- **Decisión**: no se muestra nada adicional. Los textos de la app ("Calibra la brújula antes de medir…", "Precisión brújula", la guía) siguen avisando igual que en iOS.
+
+### PM-25 Íconos — divergencia aceptada (C-1)
+
+- **Origen**: 33 SF Symbols (`inventory/symbols.tsv`).
+- **Causa**: la licencia de Apple restringe los SF Symbols a plataformas Apple.
+- **Decisión**: glifos propios dibujados sobre Lucide (ISC) o Phosphor (MIT), ajustados en peso, tamaño óptico y proporción contra las capturas. No se calca ni se deriva de los SF Symbols. Mismo tamaño de caja y mismo color que iOS; la forma interior queda fuera de la métrica de píxeles (VA-6).
+
+### PM-26 Tipografía — divergencia aceptada (C-2)
+
+- **Origen**: SF Pro, SF Pro Rounded (N/E/S/O de la brújula) y SF Mono (30…330).
+- **Causa**: misma restricción de licencia.
+- **Decisión**: Inter (OFL) para todo el texto con cifras tabulares; las 4 letras de la brújula como trazos propios redondeados; JetBrains Mono (OFL) para los 8 números. Tamaños, interlineados y pesos de `ui-spec.md` §1.1; tracking calibrado para que las cajas de texto coincidan (VA-6).
+
+### PM-27 Materiales y Liquid Glass — divergencia aceptada (C-4)
+
+- **Origen**: `.regularMaterial` (atribución OSM, aviso sin red), `.thinMaterial` (tarjeta de enlace) y el vidrio de iOS 26 en las cápsulas de la barra, el interruptor y el deslizador.
+- **Decisión**: todos esos elementos están sobre fondos casi uniformes, así que se pintan con **colores sólidos medidos** en las capturas (por ejemplo, la tarjeta de enlace a `#1E1E1E` sobre negro) más el borde de brillo que muestra iOS. El desenfoque real solo se usa en los elementos que van sobre el mapa.
+- **Divergencia aceptada**: no hay refracción dinámica del contenido de detrás.

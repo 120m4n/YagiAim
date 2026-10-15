@@ -5,7 +5,7 @@ Referencia: `120m4n/YagiAim@2eda6d9`. Destino: `android-rn/` (estructura en `pla
 **Estado** de cada fila:
 - `=`: se traspasa igual.
 - `PM-xx`: divergencia registrada en `platform-mapping.md`.
-- `C-x`: pendiente de clarificación en `spec.md`.
+- (Las clarificaciones C-x de `spec.md` están cerradas desde el 2026-10-14; donde una decisión implica divergencia, la fila apunta a su PM.)
 
 **Regla de revisión**: un PR que toca un módulo destino marca las filas que cubre y enlaza el test que lo prueba (unitario, de paridad o visual). SC-008 exige que ninguna fila quede sin estado.
 
@@ -32,9 +32,9 @@ Referencia: `120m4n/YagiAim@2eda6d9`. Destino: `android-rn/` (estructura en `pla
 |---|---|---|---|---|
 | `MeshAzimuthApp.swift` | `App.tsx` + `state/providers.tsx` | una instancia de cada servicio para toda la app (location, store, motion, link, recorder) inyectada por contexto; la factoría de transporte elige `SimulatedPinger` si `pinger.simulated` está activo **al conectar**, o BLE con el dispositivo elegido o el último; `SimInputs` compartido; `.tint(Theme.accent)` global | = | integración |
 | `RepeaterStore.swift` | `state/repeaterStore.ts` | `repeaters` (guarda en cada cambio), `selectedID` (guarda en cada cambio, nil → borra), `selected`, `add`/`update`/`delete`/`merge`; carga en el arranque | = (SF-01) | `repeaterStore.test.ts` |
-| `LocationManager.swift` | `state/locationStore.ts` + `native/HeadingModule.kt` | ver FR-020…FR-024: precisión, filtro de 2 m, `location.last` cada 5 s, `isCachedLocation`, `rawHeading` suavizado (α 0.25), `headingOffset` (`boom.offset`), `heading`, `headingAccuracy`, `authorization`, `usingMagneticFallback`, `calibrate(toBearing)`, `start`/`stop` | PM-04…PM-08, C-5, C-6 | unitario (suavizado) + campo (SC-004) |
+| `LocationManager.swift` | `state/locationStore.ts` + módulo `heading` (FOP) | ver FR-020…FR-024: precisión, filtro de 2 m, `location.last` cada 5 s, `isCachedLocation`, `rawHeading` suavizado (α 0.25), `headingOffset` (`boom.offset`), `heading`, `headingAccuracy`, `authorization`, `usingMagneticFallback`, `calibrate(toBearing)`, `start`/`stop` | PM-04…PM-08, PM-24 | unitario (suavizado) + campo (SC-004) |
 | `LocationManager.updateOrientation` | — | no se llama desde ningún sitio en la referencia (la app es solo vertical) | = (no se porta código muerto; la orientación de rumbo queda fija en vertical) | — |
-| `MotionManager.swift` | `state/motionStore.ts` + `HeadingModule.kt` | `pitch` en grados, 10 Hz, EMA 0.3, `start` no reentra, `stop` pone nil | PM-07 | campo (SC-004) |
+| `MotionManager.swift` | `state/motionStore.ts` + módulo `heading` | `pitch` en grados, 10 Hz, EMA 0.3, `start` no reentra, `stop` pone nil | PM-07 | campo (SC-004) |
 | `NetworkMonitor.swift` | `state/networkStore.ts` | `isOnline` inicial true; equivalente a `.satisfied` | PM-13 | manual |
 | `Haptics.swift` | `platform/haptics.ts` | `startAligned(3)` no reentrante, `stop()`, fallback `.success` | PM-10 | manual + unitario (temporizador) |
 | `Link/LineTransport.swift` | `link/lineTransport.ts` | `LinkState` (5), `isReady`, `failure`, `LinkError` (7) con mensajes exactos, `opensSettings`, `PingerDevice`, interfaz `LineTransport` (`state`, `states`, `lines`, `open`, `close`, `send`) | = | `lineTransport.test.ts` (mensajes) |
@@ -50,19 +50,19 @@ Referencia: `120m4n/YagiAim@2eda6d9`. Destino: `android-rn/` (estructura en `pla
 | Origen Swift | Destino | Elementos (detalle en `ui-spec.md`) | Estado |
 |---|---|---|---|
 | `Theme.swift` | `ui/theme.ts` | `navy #011949`, `accent #2E8CFF`, `target #FF9E1A` + colores de sistema | = |
-| `ContentView.swift` | `screens/MapScreen.tsx` | barra superior (navy, oscura, título "MeshAzimuth", botón de estilo de mapa, info, lista), mapa a pantalla completa (sin área segura inferior), botón de seguimiento, atribución OSM, panel inferior / cápsula, banners, hojas (editor, lista, acerca de), apuntamiento y guía a pantalla completa, `loc.start()` al aparecer | C-1, C-2, C-4 |
-| `MapView.swift` | `screens/map/MapView.tsx` | FR-012, FR-013, FR-015; filtro de gestos (marcador, control, brújula y escala no disparan el alta) | C-3, PM-01, PM-02 |
+| `ContentView.swift` | `screens/MapScreen.tsx` | barra superior (navy, oscura, título "MeshAzimuth", botón de estilo de mapa, info, lista), mapa a pantalla completa (sin área segura inferior), botón de seguimiento, atribución OSM, panel inferior / cápsula, banners, hojas (editor, lista, acerca de), apuntamiento y guía a pantalla completa, `loc.start()` al aparecer | PM-25, PM-26 |
+| `MapView.swift` | `screens/map/MapView.tsx` | FR-012, FR-013, FR-015; filtro de gestos (marcador, control, brújula y escala no disparan el alta) | PM-01, PM-02 |
 | `TrackingButton.swift` | `screens/map/TrackingButton.tsx` | FR-014 | PM-03 |
 | `PermissionBanner.swift` | `screens/PermissionBanner.tsx` | denegado o restringido → aviso + "Abrir Ajustes" (botón prominente pequeño) | PM-11 |
-| `OnboardingView.swift` | `screens/OnboardingScreen.tsx` | 3 páginas (ícono 64 semibold target, título `.title.bold`, texto blanco 85 %, centrado, padding 32), paginador tipo iOS, botón prominente grande "Siguiente"/"Empezar", fondo navy, oscuro, no descartable | C-1 |
-| `AboutView.swift` | `screens/AboutScreen.tsx` | secciones: cabecera (scope 44, nombre `.title2.bold`, subtítulo), Aplicación, Almacenamiento (+ pie), Depuración (+ pie), Desarrollador, Proyectos relacionados; "Listo"; guía a pantalla completa; diálogo de borrado | C-1 |
+| `OnboardingView.swift` | `screens/OnboardingScreen.tsx` | 3 páginas (ícono 64 semibold target, título `.title.bold`, texto blanco 85 %, centrado, padding 32), paginador tipo iOS, botón prominente grande "Siguiente"/"Empezar", fondo navy, oscuro, no descartable | PM-25 |
+| `AboutView.swift` | `screens/AboutScreen.tsx` | secciones: cabecera (scope 44, nombre `.title2.bold`, subtítulo), Aplicación, Almacenamiento (+ pie), Depuración (+ pie), Desarrollador, Proyectos relacionados; "Listo"; guía a pantalla completa; diálogo de borrado | PM-25 |
 | `RepeaterViews.swift` (`RepeaterList`) | `screens/RepeaterListScreen.tsx` | filas (nombre `.headline`, detalle `.caption` tabular secundario, check target), detalle "306.7 km · az 62.8° ENE" (`%.1f km`/`%.0f m`, `az %.1f°`) o coordenadas `%.6f, %.6f`, búsqueda "Buscar repetidor", vista vacía, "Cerrar", "+", menú (Orden con selección, Importar JSON…, Exportar JSON), alerta "Importación" | PM-16 |
 | `RepeaterViews.swift` (`RepeaterEditor`) | `screens/RepeaterEditorScreen.tsx` | secciones y pies exactos, validación del hash en rojo, parseo con `,`→`.`, `Guardar` deshabilitado según la regla, decide alta o edición contra el store, valores iniciales con `String(Double)` | FS-09, PM-17 |
-| `AimView.swift` | `screens/AimScreen.tsx` | FR-028 | C-7 |
-| `CompassView.swift` | `screens/aim/CompassView.tsx` (react-native-svg) | FR-027 | C-7 |
+| `AimView.swift` | `screens/AimScreen.tsx` | FR-028 | = |
+| `CompassView.swift` | `screens/aim/CompassView.tsx` (Skia) | FR-027, incluida la vuelta larga al cruzar el norte (C-7) | = |
 | `PingerSection.swift` | `screens/aim/PingerSection.tsx` | tarjeta de enlace, aviso de hash faltante, controles de medida solo con enlace operativo, botón con progreso "Midiendo d/t…", aviso de calibración, error en rojo, resumen de la lectura, botón "Sesión · N lecturas", propagación de `SimInputs`, reconfiguración del hash al cambiar | = |
-| `LinkCard.swift` | `screens/aim/LinkCard.tsx` | FR-034; sparkline equivalente a Swift Charts `LineMark` con eje X oculto y eje Y por defecto, alto 56 | C-1 |
-| `PingerPicker.swift` (vista) | `screens/PingerPickerScreen.tsx` | FR-034 | C-1 |
+| `LinkCard.swift` | `screens/aim/LinkCard.tsx` | FR-034; sparkline equivalente a Swift Charts `LineMark` con eje X oculto y eje Y por defecto, alto 56 | PM-25 |
+| `PingerPicker.swift` (vista) | `screens/PingerPickerScreen.tsx` | FR-034 | PM-25 |
 | `SessionView.swift` | `screens/SessionSheet.tsx`, `screens/SessionView.tsx` | FR-042 | FS-07 |
 | `Assets.xcassets/AppIcon` | `android/app/src/main/res/mipmap-*` | ícono adaptativo a partir del PNG de 1024 | PM-15 |
 | `Info.plist` / `project.yml` | `app.json`/`AndroidManifest.xml` | FR-050…FR-052 | PM-11, PM-15 |

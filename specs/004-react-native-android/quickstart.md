@@ -43,5 +43,5 @@ npm run visual                  # 61 estados → visual/report/index.html
 
 ## Banco y campo
 
-- `bench-log.md`: plantillas para R-3, R-4, R-5, SC-004 y SC-006.
+- `bench-log.md`: plantillas para R-3, R-4, R-5, SC-004, SC-006 y la verificación de FOP (T081).
 - SC-006: pinger del banco (repetidor `4F`, 22 dBm, < 1 m), 20 pings en "En vivo", y anotar la conexión, el tiempo por ping, SNR, RSSI, RTT y la pérdida.

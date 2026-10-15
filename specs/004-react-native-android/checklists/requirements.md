@@ -10,7 +10,7 @@
 
 ## Requirement Completeness
 
-- [ ] Sin [NEEDS CLARIFICATION]: **11 abiertas** (C-1…C-11); todas con opciones y con las tareas que bloquean
+- [x] Sin [NEEDS CLARIFICATION]: las 11 (C-1…C-11) quedaron cerradas en la sesión del 2026-10-14; las divergencias que implican están en PM-02 y PM-24…PM-27
 - [x] Cada FR cita su origen en Swift (archivo y línea)
 - [x] Criterios medibles (SC-001…SC-008) con método de verificación
 - [x] Casos borde de plataforma identificados (identificadores, altitud, MTU, redondeo, fechas, animación)
@@ -22,4 +22,4 @@
 - [x] 46/46 tests XCTest asignados a su suite Jest
 - [x] 11/11 claves de persistencia en `storage-and-files.md`
 - [x] 33/33 símbolos y 406 literales de texto inventariados (generados del código)
-- [x] US1 lista para `/speckit.implement` sin decisiones pendientes; el resto, según la Phase 0 de tasks
+- [x] Lista para `/speckit.implement` completa; quedan dos verificaciones en dispositivo (T081 FOP, R-5 escaneo) que ajustan la implementación, no las decisiones

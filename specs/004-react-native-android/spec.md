@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-14
 
-**Status**: Draft
+**Status**: Clarified (2026-10-14)
 
 **Input**: User description: "La aplicación de esta sesión ya fue escrita, validada y probada (pinger firmware incluido). Tu tarea es convertirla a React Native (pixel perfect y como target Android). URL: http://github.com/120m4n/YagiAim. Tu tarea es escribir la spec kit de conversión. Nada de adivinar ni crear nuevas funcionalidades. Se debe traspasar directamente."
 
@@ -17,12 +17,12 @@
   - `specs/003-ble-nus-yagiaim-link/contracts/session-csv.md` (CSV)
   - `specs/002-trace-frame-host-tests/contracts/fixture-format.md` (fixtures)
 - **No cambia**: el firmware del pinger (repo MeshCore-HJ7RMN, `examples/trace_pinger`), el protocolo, la app iOS. El port es un cliente más del mismo pinger.
-- **Regla de esta feature** (Constitución VII): cada comportamiento del port tiene una línea de origen en Swift. Las funciones, textos, reglas, tiempos, formatos y persistencia se traspasan tal cual. Si Android no permite hacer algo igual, la divergencia se registra en `contracts/platform-mapping.md` con su causa; las que requieren una decisión del dueño del producto están marcadas como `[NEEDS CLARIFICATION]` en esta spec.
+- **Regla de esta feature** (Constitución VII): cada comportamiento del port tiene una línea de origen en Swift. Las funciones, textos, reglas, tiempos, formatos y persistencia se traspasan tal cual. Si Android no permite hacer algo igual, la divergencia se registra en `contracts/platform-mapping.md` con su causa y la decisión tomada (ver **Clarifications**, sesión 2026-10-14).
 
 ### Fuera de alcance
 
 - Funciones nuevas de cualquier tipo, incluidas las "naturales" en Android (botón atrás que haga algo distinto a cerrar, widgets, modo apaisado, tablets, modo background, notificaciones, localización a otros idiomas).
-- Cambios en la app iOS. Única excepción: la herramienta de captura de referencias de US6, que se pide como decisión C-8.
+- Cambios en la app iOS, sin excepciones (incluidas herramientas de prueba o de captura). Cuando la falta de algo en iOS impide verificar en igualdad, se registra la divergencia y se aplica la decisión tomada (sesión de clarificación del 2026-10-14).
 - Cambios en el firmware o en los contratos 001–003.
 - Un build para iOS desde React Native.
 
@@ -126,11 +126,11 @@ Como dueño del producto, quiero una suite automática que compare cada pantalla
 
 **Why this priority**: Es el criterio de aceptación que pidió el usuario. Se construye en paralelo a US2–US5 y las bloquea al final.
 
-**Independent Test**: `npm run visual` en el AVD de referencia (1290×2796 px, 480 dpi = 430×932 dp, el mismo tamaño lógico que el iPhone de las capturas) produce un informe con el porcentaje de diferencia por pantalla y el veredicto según `contracts/visual-acceptance.md`.
+**Independent Test**: `npm run visual` en el AVD de referencia (1290×2796 px, 480 dpi = 430×932 dp, el mismo tamaño lógico que el iPhone de las capturas) produce un informe con métricas por pantalla y el veredicto según `contracts/visual-acceptance.md`: comparación contra iOS en los estados con captura y regresión contra la línea base aprobada en el resto.
 
 **Acceptance Scenarios**:
 
-1. **Given** las 13 capturas de `docs/img` y las del inventario de estados de `visual-acceptance.md`, **When** corre la suite, **Then** cada pantalla Android se compara en sRGB, convirtiendo antes las referencias de Display P3, con máscaras para la barra de estado, el indicador de inicio, las teselas de mapa y los valores en vivo.
+1. **Given** las capturas de `docs/img` (12 imágenes, 11 estados), **When** corre la suite con los valores de cada captura inyectados en Android, **Then** cada pantalla se compara en sRGB (referencias convertidas de Display P3) con máscaras para las barras del sistema, las teselas de mapa y la fecha (capturada en otra región), aplicando el criterio de C-10.
 2. **Given** una pantalla que supera el umbral, **When** se informa, **Then** el informe incluye la imagen de diferencias y la zona afectada.
 
 ### Edge Cases
@@ -140,7 +140,7 @@ Como dueño del producto, quiero una suite automática que compare cada pantalla
 - **Altitud**: iOS reporta altitud sobre el nivel medio del mar; Android, sobre el elipsoide WGS84. Sin convertir, la elevación al repetidor (altitud en "m s.n.m.") tendría un error igual a la ondulación del geoide (decenas de metros en Colombia). Ver `platform-mapping.md` PM-08.
 - **Línea de más de 160 B, UTF-8 partido entre notificaciones, `\r\n`**: igual que `LineAssembler` (tests portados).
 - **MTU**: Android arranca con 23 B (20 útiles). El port negocia MTU para igualar el comportamiento automático de iOS, y la fragmentación por `\n` sigue funcionando con cualquier MTU (PM-12).
-- **Animación de la brújula al cruzar el norte**: SwiftUI anima `rotationEffect` de forma numérica, así que de 359° a 1° da casi una vuelta completa. El port replica ese comportamiento, salvo decisión C-7.
+- **Animación de la brújula al cruzar el norte**: SwiftUI anima `rotationEffect` de forma numérica, así que de 359° a 1° da casi una vuelta completa. El port replica ese comportamiento (C-7: traspaso literal del defecto).
 - **Tamaño de texto del sistema**: la aceptación visual se mide con escala 1.0 (iOS "Large"). Con otras escalas el texto crece como en iOS, sin compromiso de pixel perfect.
 
 ## Requirements *(mandatory)*
@@ -161,7 +161,7 @@ Cada FR cita su origen. "Igual que" significa mismo texto, mismos valores, mismo
 
 - **FR-010**: El modelo `Repeater` y su persistencia DEBEN replicar `Repeater`/`RepeaterStore`: claves `repeaters.v1` (JSON) y `repeaters.selected`; `add` selecciona; `delete` reselecciona el primero; `merge` con la misma regla; `normalizedHashPrefix` (`RepeaterStore.swift`).
 - **FR-011**: El JSON de repetidores (persistido y exportado) DEBE ser compatible en ambos sentidos con el `JSONEncoder` de Swift. La exportación usa `prettyPrinted` + `sortedKeys` con el mismo nombre de archivo (`MeshAzimuth-repetidores.json`) y omite los opcionales nil (`storage-and-files.md` SF-03).
-- **FR-012**: El mapa DEBE ofrecer los dos estilos (estándar con teselas OSM y satélite con etiquetas), conmutados con el botón de la barra izquierda y persistidos en `map.satellite`. Estándar: plantilla `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, zoom máximo 19, `User-Agent: MeshAzimuth/1.0 (co.electrosoftware.meshazimuth)`, caché pasiva en disco de 500 MB (memoria 20 MB) que sirve teselas vencidas sin red, sin prefetch, y atribución "© OpenStreetMap contributors" abajo a la izquierda. Satélite: proveedor [NEEDS CLARIFICATION C-3: Apple Maps no existe en Android].
+- **FR-012**: El mapa DEBE ofrecer los dos estilos (estándar con teselas OSM y satélite con etiquetas), conmutados con el botón de la barra izquierda y persistidos en `map.satellite`. Estándar: plantilla `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, zoom máximo 19, `User-Agent: MeshAzimuth/1.0 (co.electrosoftware.meshazimuth)`, caché pasiva en disco de 500 MB (memoria 20 MB) que sirve teselas vencidas sin red, sin prefetch, y atribución "© OpenStreetMap contributors" abajo a la izquierda. Satélite: teselas **EOX Sentinel-2 cloudless** (WMTS público, sin API key ni pago) con la atribución exigida por su licencia, y encima etiquetas y vías **vectoriales de OpenFreeMap** (esquema OpenMapTiles, datos OSM; sin registro, sin API key, uso comercial permitido) (PM-02). Motor: **MapLibre React Native** (C-3).
 - **FR-013**: Marcadores, línea y controles del mapa DEBEN replicar `MapView.swift`: marcador tipo globo con el glifo de antena, naranja (`target`) si está seleccionado y azul (`accent`) si no; tocar un marcador lo selecciona sin dejarlo seleccionado en el mapa; línea usuario → repetidor con contorno blanco 95 % de 8 px y extremo redondeado, más trazo naranja de 4 px con discontinuidad [12, 8] y extremo plano, por encima de las etiquetas; brújula adaptativa a 60 pt bajo el área segura y 12 pt del borde derecho; escala visible a 8/8 pt arriba a la izquierda; punto de ubicación del usuario.
 - **FR-014**: El botón de seguimiento DEBE replicar `TrackingButton.swift`: ciclo sin seguir → seguir → seguir con rumbo → seguir; vuelve a "sin seguir" al arrastrar; mismos íconos, colores, tamaño de 44×44, radio de 10 y etiquetas de accesibilidad.
 - **FR-015**: La región visible DEBE persistirse en `map.camera` como `[lat, lon, latDelta, lonDelta]` en cada cambio y validarse al leerla igual que `savedRegion()`.
@@ -174,7 +174,7 @@ Cada FR cita su origen. "Igual que" significa mismo texto, mismos valores, mismo
 - **FR-020**: El proveedor de ubicación DEBE dar la mejor precisión disponible con filtro de distancia de 2 m. Solo acepta fixes con precisión horizontal ≥ 0 y persiste la última ubicación en `location.last` (claves `lat, lon, alt, h, v, t`) como mucho cada 5 s. Al arrancar la restaura y marca `isCachedLocation` (`LocationManager.swift`).
 - **FR-021**: La altitud DEBE expresarse sobre el nivel medio del mar, como `CLLocation.altitude`. La precisión vertical "no válida" (< 0 en iOS) se representa igual (PM-08).
 - **FR-022**: El rumbo DEBE ser verdadero (declinación corregida con el modelo geomagnético y la ubicación). Sin ubicación usa el magnético y activa `usingMagneticFallback`. Se suaviza con EMA α = 0.25 sobre seno/coseno, con filtro de 0.5° y referido al borde superior del teléfono en vertical (`portrait`), plano sobre el boom (PM-05, PM-06).
-- **FR-023**: La precisión del rumbo DEBE expresarse en grados, como `CLHeading.headingAccuracy` (negativo = no válida), porque de ella dependen el texto "Precisión brújula", la regla de 15° y el bloqueo de "Medir aquí". Fuente y equivalencia: [NEEDS CLARIFICATION C-5].
+- **FR-023**: La precisión del rumbo DEBE expresarse en grados, como `CLHeading.headingAccuracy` (negativo = no válida), porque de ella dependen el texto "Precisión brújula", la regla de 15° y el bloqueo de "Medir aquí". Fuente: **Fused Orientation Provider** de Google Play Services (`DeviceOrientation.headingErrorDegrees`); sin FOP (dispositivo sin giroscopio o sin Play Services), la precisión estimada del vector de rotación (`values[4]`), y si tampoco existe, `-1` ("sin calibrar"), lo que bloquea "Medir aquí" igual que en iOS (C-5, PM-05).
 - **FR-024**: El offset del boom DEBE persistirse en `boom.offset` y `heading = normalize(raw + offset)` (`LocationManager.swift` L17–21).
 - **FR-025**: La inclinación DEBE ser el pitch de la orientación del dispositivo en grados, positivo cuando el frente sube, a 10 Hz con EMA α = 0.3. Solo se mide con la pantalla de apuntamiento visible y se borra al detenerse (`MotionManager.swift`, PM-07).
 - **FR-026**: La vibración al alinear DEBE equivaler a `Haptics.startAligned(3 s)`: continua de intensidad 0.8 más golpes de intensidad 1.0 cada 0.5 s, cancelable con `stop()`, sin reentrar mientras está activa. Sin vibrador con control de amplitud se usa el equivalente de `notificationOccurred(.success)` (PM-10).
@@ -220,11 +220,11 @@ Cada FR cita su origen. "Igual que" significa mismo texto, mismos valores, mismo
 ### Functional Requirements — aceptación visual (US6)
 
 - **FR-060**: La UI DEBE construirse con componentes propios que reproduzcan los de iOS de las capturas (iOS 26), no con componentes Material: barra de navegación con botones en cápsula, hojas con esquinas superiores redondeadas, listas agrupadas, interruptor, deslizador, botones `borderedProminent`/`bordered`, diálogos de confirmación, menú, acciones por deslizamiento, búsqueda, vista de contenido vacío, indicador de actividad y paginador de la guía (`ui-spec.md`).
-- **FR-061**: Tipografía: tamaños, interlineados y pesos de los estilos de texto de iOS en tamaño "Large", cifras tabulares donde Swift usa `monospacedDigit()` y variantes redondeada y monoespaciada donde las usa la brújula. Familia de letra: [NEEDS CLARIFICATION C-2].
-- **FR-062**: Iconografía: los 33 símbolos de `contracts/inventory/symbols.tsv` con el mismo tamaño, peso y color. Origen de los glifos: [NEEDS CLARIFICATION C-1].
+- **FR-061**: Tipografía: tamaños, interlineados y pesos de los estilos de texto de iOS en tamaño "Large", cifras tabulares donde Swift usa `monospacedDigit()` y variantes redondeada y monoespaciada donde las usa la brújula. Familias (C-2): **Inter** (OFL) para todo el texto, con cifras tabulares; las 4 letras de la brújula (N/E/S/O) como **trazos vectoriales propios** redondeados; los 8 números de la brújula en **JetBrains Mono** (OFL).
+- **FR-062**: Iconografía: los 33 símbolos de `contracts/inventory/symbols.tsv` con el mismo tamaño, peso y color. Origen (C-1): **dibujo propio** de los 33 glifos sobre la base de Lucide (ISC) o Phosphor (MIT), ajustado en peso y proporción contra las capturas; prohibido calcar o derivar de los SF Symbols.
 - **FR-063**: Colores: `Theme` (`#011949`, `#2E8CFF`, `#FF9E1A`) y los colores de sistema de iOS en modo claro y oscuro (`ui-spec.md`, tabla de colores, medida en las capturas tras convertirlas a sRGB). La app sigue el modo del sistema como iOS, con las mismas zonas forzadas a oscuro.
-- **FR-064**: Materiales (`.regularMaterial`, `.thinMaterial`) y efectos "Liquid Glass" de iOS 26: se reproduce su apariencia con desenfoque y tinte, con el umbral de diferencias propio de zona "material" de `visual-acceptance.md` [NEEDS CLARIFICATION C-4].
-- **FR-065**: Suite visual según `visual-acceptance.md` (AVD de referencia, inyección determinista de sensores y pinger en builds de prueba, conversión P3 → sRGB, máscaras y umbrales).
+- **FR-064**: Materiales (`.regularMaterial`, `.thinMaterial`) y efectos "Liquid Glass" de iOS 26: como en la app todos van sobre fondos casi uniformes, se reproducen con **colores sólidos medidos** en las capturas más un borde de brillo donde iOS lo muestra; el desenfoque real se usa solo sobre el mapa (atribución OSM, aviso sin red) (C-4).
+- **FR-065**: Suite visual según `visual-acceptance.md`: comparación contra las capturas iOS existentes reproduciendo en Android los valores que muestra cada una (inyección determinista solo en Android), conversión P3 → sRGB, máscaras y el criterio de C-10; los estados sin captura iOS usan una línea base Android aprobada por el dueño (C-8).
 
 ### Key Entities
 
@@ -238,7 +238,7 @@ Las mismas de Swift, con los mismos campos y significados (ver `data-model.md`):
 - **SC-002**: 100 % de las líneas de los 5 archivos de fixtures producen el mismo evento en TypeScript que en Swift.
 - **SC-003**: Para la sesión de ejemplo de `SessionCSVTests`, el CSV de Android es idéntico byte a byte al de iOS (zona `-05:00`). El JSON de repetidores exportado en un lado se importa en el otro con 0 omisiones.
 - **SC-004**: Con el teléfono Android y el iPhone en la misma regla, "Rumbo teléfono" difiere ≤ 2° (mediana de 10 lecturas en 4 orientaciones), "Inclinación boom" ≤ 1° y "Elevación objetivo" ≤ 0.1° para el mismo repetidor y ubicación.
-- **SC-005**: Con sensores y pinger simulados deterministas, cada estado del inventario de `visual-acceptance.md` cumple su umbral en el AVD de referencia.
+- **SC-005**: Con sensores y pinger simulados deterministas, los estados con captura iOS cumplen el criterio de C-10 frente a iOS, y el resto coincide con su línea base Android aprobada, en el AVD de referencia.
 - **SC-006**: En banco (pinger a < 1 m, repetidor `4F`, 22 dBm), Android logra: conexión BLE ≤ 1.0 s (iOS ≈ 0.8 s), comando → resultado ≤ 1.6 s (iOS ≈ 1.4 s), 0 % de pérdida en 20 pings, y SNR/RSSI en los rangos de la tabla del README.
 - **SC-007**: El pinger simulado con semilla 1 y las mismas entradas emite en Android la misma secuencia de tags y valores que en iOS (primeros 20 pings).
 - **SC-008**: 0 divergencias sin registrar: cada fila de `contracts/parity-matrix.md` tiene estado "igual" o una entrada PM aprobada.
@@ -246,24 +246,32 @@ Las mismas de Swift, con los mismos campos y significados (ver `data-model.md`):
 ## Assumptions
 
 - La app iOS en `2eda6d9` es correcta y completa. Si un test del port revela un defecto en Swift, se reporta y **no** se corrige en el port (se traspasa igual), salvo decisión explícita del dueño.
-- Las 13 capturas de `docs/img` son la referencia visual disponible. Los estados que no están ahí se capturan del iPhone según el procedimiento de `visual-acceptance.md`.
+- Las capturas de `docs/img` son la única referencia visual de iOS. Se pueden añadir más capturas tomadas a mano en un iPhone (sin cambiar la app); la suite las incorpora si siguen el procedimiento de `visual-acceptance.md` VA-1.
 - Reference device: las capturas miden 1290×2796 px (430×932 pt @3x), con perfil Display P3, en modo oscuro salvo la barra del mapa (forzada).
 - El pinger y su firmware no cambian; Android es un central BLE más (el pinger acepta uno a la vez).
 
-## Clarifications needed
+## Clarifications
 
-Decisiones que el código no resuelve y que cambian lo que se construye. Cada una trae opciones; ninguna se resuelve por suposición.
+### Session 2026-10-14
 
-| ID | Tema | Por qué no se puede traspasar tal cual | Opciones |
-|---|---|---|---|
-| C-1 | Iconos SF Symbols | La licencia de Apple solo permite usarlos en plataformas Apple | (a) redibujar los 33 glifos como SVG propios calcados en forma y peso, con revisión visual; (b) el equivalente más cercano de Material Symbols o Lucide (no será pixel perfect) |
-| C-2 | Fuente SF Pro / Rounded / Mono | Misma restricción de licencia | (a) Inter + variante redondeada + JetBrains Mono, con métricas y tracking ajustados a SF; (b) Roboto del sistema (más diferencia visual) |
-| C-3 | Mapa satélite | `MKMapView` híbrido (Apple) no existe en Android | (a) Google Maps híbrido (requiere API key y facturación); (b) teselas satelitales de un tercero (Esri World Imagery, MapTiler) con etiquetas, sujetas a sus términos; motor (a) react-native-maps o (b) MapLibre RN (en línea con tu decisión de migrar tus proyectos GIS a MapLibre) |
-| C-4 | Liquid Glass / materiales | La refracción y el desenfoque de iOS 26 no tienen equivalente exacto | (a) aproximar con desenfoque + tinte y umbral "material" más laxo; (b) fondo sólido con el color medido (más estable, menos fiel) |
-| C-5 | Precisión de la brújula en grados | Android expone la precisión estimada del vector de rotación (`values[4]`, radianes) solo en algunos dispositivos; si no, solo da 4 niveles | (a) usar `values[4]` y, si no existe, tratar como "sin calibrar" (bloquea "Medir aquí" en esos teléfonos); (b) tabla nivel → grados que tendrías que aprobar (valores nuevos, no salen de iOS) |
-| C-6 | Diálogo de calibración del sistema | iOS lo muestra solo cuando la precisión pasa de 15° (`locationManagerShouldDisplayHeadingCalibration`); Android no tiene equivalente | (a) no mostrar nada (solo los textos de la app, que ya avisan); (b) añadir una pantalla de calibración propia (es una función nueva) |
-| C-7 | Animación al cruzar el norte | La animación numérica de SwiftUI da casi una vuelta completa de 359° a 1° | (a) replicarla tal cual (traspaso literal); (b) camino más corto (corrige un defecto visual, pero es un cambio) |
-| C-8 | Capturas de referencia faltantes | Solo hay 13 capturas y faltan estados (claro/oscuro, errores, guía, *Acerca de*…); sin un mecanismo determinista no se pueden comparar | (a) añadir a iOS un arnés de prueba solo para DEBUG con sensores y pinger fijos por argumento de lanzamiento (cambia el repo iOS, sin efecto en la app publicada); (b) capturas manuales en un iPhone real siguiendo un guion (menos reproducibles) |
-| C-9 | Configuración regional de referencia | Las fechas siguen la configuración regional del dispositivo; la captura muestra "14 Oct 2026 at 5:28 PM" (inglés, día-mes) | Confirmar la región exacta del iPhone de referencia para fijar la del AVD |
-| C-10 | Umbrales de aceptación visual | "Pixel perfect" exige un umbral numérico entre plataformas con distinto rasterizado de fuentes | Aprobar los umbrales propuestos en `visual-acceptance.md` (VA-6) o fijar otros |
-| C-11 | SDK mínimo de Android | Condiciona permisos BLE, conversión de altitud y vibración con amplitud | Propuesto: `minSdk 26` (Android 8.0), `targetSdk 35`. Confirmar |
+Regla general dada por el dueño: **no se añade nada a la app iOS; si hay divergencia, se asume la decisión** y se registra.
+
+- Q: C-10 ¿Qué significa "pixel perfect" si fuente e íconos no pueden ser los de Apple? → A: **Estricto en geometría y color; flexible en la forma de los glifos.** Posición y tamaño de elementos ±1 dp, color ΔE2000 ≤ 2, cajas de texto (ancho ±2 %, alto y línea base ±1 dp); el interior de letras e íconos se excluye de la métrica de píxeles (`visual-acceptance.md` VA-6).
+- Q: C-3 ¿Proveedor de satélite? → A: **Cualquiera libre, sin API key ni pago.** Se elige EOX Sentinel-2 cloudless **2016** (WMTS público, CC BY 4.0, sin restricción comercial) + etiquetas y vías vectoriales de OpenFreeMap; motor MapLibre RN. Divergencia aceptada: 10 m de resolución frente a la imagen submétrica de Apple (PM-02).
+- Q: C-9 ¿Región? → A: **Español (Colombia), `es_CO`.** Las capturas iOS existentes muestran la fecha en otra región, así que la fecha se enmascara en ellas y se verifica por dorado (FS-07).
+- Q: C-8 ¿Arnés de captura en iOS? → A: **No se añade nada a iOS.** La comparación contra iOS usa solo las capturas existentes (o nuevas tomadas a mano); el resto de estados, una línea base Android aprobada por el dueño.
+- C-1, C-2, C-4, C-5, C-6, C-7, C-11: sin objeción a las recomendaciones del brainstorming; se aplican por la regla general:
+
+| ID | Decisión |
+|---|---|
+| C-1 | Íconos propios sobre la base de Lucide/Phosphor, sin calcar SF Symbols |
+| C-2 | Inter + N/E/S/O como trazos propios + JetBrains Mono para 30…330 |
+| C-3 | MapLibre RN; estándar = OSM (mismas teselas que iOS); satélite = EOX Sentinel-2 cloudless 2016 (CC BY 4.0) + etiquetas/vías OpenFreeMap |
+| C-4 | Colores sólidos medidos + borde de brillo; desenfoque solo sobre el mapa |
+| C-5 | Fused Orientation Provider (grados) → `values[4]` → `-1` ("sin calibrar") |
+| C-6 | Sin diálogo de calibración del sistema (divergencia aceptada; los textos de la app ya avisan) |
+| C-7 | Se replica la vuelta larga al cruzar el norte (defecto de iOS traspasado tal cual) |
+| C-8 | Sin cambios en iOS; capturas existentes + línea base Android aprobada |
+| C-9 | `es_CO` |
+| C-10 | Criterio de la primera pregunta (VA-6) |
+| C-11 | `minSdk 26`, `targetSdk 35` |

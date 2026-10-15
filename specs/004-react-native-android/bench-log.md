@@ -2,6 +2,12 @@
 
 Plantillas de registro para las mediciones de `research.md` y los criterios que no se verifican con tests automáticos. Cada fila lleva la fecha, el dispositivo (modelo, versión de Android, versión de la app) y quién midió.
 
+## T081 Verificación de Fused Orientation Provider
+
+| Dispositivo | Android | Play Services | ¿FOP disponible? | Unidades de `headingErrorDegrees` (comparar con el valor de iOS en la misma situación) | ¿Indica norte magnético? ¿cómo? | Sin GPS: ¿rumbo magnético? |
+|---|---|---|---|---|---|---|
+| | | | | | | |
+
 ## R-3 Respuesta al escalón del rumbo suavizado (30°)
 
 | Plataforma | Dispositivo | Repetición | t al 90 % (ms) | Eventos/s | Notas |

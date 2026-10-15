@@ -32,14 +32,15 @@ Inventarios generados del código (no editar a mano; se regeneran con `tools/inv
 | `.system(size: 18, .semibold)` | 18 | semibold | ícono del botón de seguimiento |
 | `.system(size: 64/44, .semibold)` | 64 / 44 | semibold | íconos de la guía y de *Acerca de* |
 
-- `monospacedDigit()` → `fontVariant: ['tabular-nums']`. La fuente elegida en C-2 debe tener la característica `tnum`.
-- **Tracking**: SF aplica un tracking dependiente del tamaño (tabla "Tracking" de Apple HIG → Typography). El port aplica a cada tamaño el valor de esa tabla, convertido a `letterSpacing` y **ajustado** para la fuente de C-2 hasta cumplir VA-6 en las pantallas de texto (calibración T060).
+- Familias (PM-26): **Inter** para todo el texto; N/E/S/O de la brújula como trazos propios redondeados; **JetBrains Mono** para 30…330.
+- `monospacedDigit()` → `fontVariant: ['tabular-nums']` (Inter tiene `tnum`).
+- **Tracking**: SF aplica un tracking dependiente del tamaño (tabla "Tracking" de Apple HIG → Typography). El port aplica a cada tamaño el valor de esa tabla, convertido a `letterSpacing` y **ajustado** para Inter hasta que las cajas de texto cumplan VA-6 (c) en las capturas 02, 05_01 y 09 (calibración T060).
 
 ### 1.2 Colores
 
 **Marca** (`Theme.swift`, sRGB): `navy #011949`, `accent #2E8CFF`, `target #FF9E1A`. Verificados en las capturas tras convertir de Display P3 a sRGB: botón "Medir aquí" `#2D8CFF`, barra del mapa `#001949`.
 
-**Sistema** (modo oscuro, medidos en las capturas en sRGB; el modo claro se mide en las capturas de C-8):
+**Sistema** (modo oscuro, medidos en las capturas en sRGB; para el modo claro no hay capturas, así que se usan los valores de la paleta de colores de sistema que publica Apple):
 
 | Token | Uso | Oscuro (medido) | Claro |
 |---|---|---|---|
@@ -47,7 +48,7 @@ Inventarios generados del código (no editar a mano; se regeneran con `tools/inv
 | fondo de hoja (`systemGroupedBackground` elevado) | hojas | `#1C1C1E` | medir |
 | celda de lista / campo de formulario | filas | `#2C2C2E` | medir |
 | separador de celdas | entre filas | `#404043` (opaco sobre la celda) | medir |
-| `.thinMaterial` sobre negro | tarjeta de enlace | `#1E1E1E` | medir |
+| `.thinMaterial` sobre negro | tarjeta de enlace | `#1E1E1E` (sólido, PM-27) | medir |
 | `.bordered` + accent | "Calibrar boom" | fondo `#0C2340`, texto accent | medir |
 | pista del deslizador | tolerancia | `#191919` | medir |
 | relleno del deslizador | tolerancia | accent | accent |
@@ -57,7 +58,7 @@ Inventarios generados del código (no editar a mano; se regeneran con `tools/inv
 | `secondaryLabel` / `.secondary` | textos secundarios | — | — |
 | `.green` / `.red` | alineado, conectado / errores | systemGreen / systemRed | — |
 
-Los colores sin medir se toman de la paleta de colores de sistema de iOS en el modo correspondiente y se **verifican** con pixel picking en las capturas de C-8 (tarea T061). Si no coinciden, manda la captura.
+Los tokens oscuros que no tienen muestra directa (por ejemplo `label`, `secondaryLabel`, `systemGreen`, `systemRed`) se toman de la paleta de sistema de Apple y se **verifican** midiendo los textos de las capturas existentes (T053). Si no coinciden, manda la captura. Las celdas "medir" de la columna clara toman el valor publicado por Apple.
 
 ### 1.3 Geometría recurrente
 
@@ -163,7 +164,7 @@ En cada pantalla los textos son los de `strings.tsv` para el archivo indicado; a
 
 | Animación | Origen | Especificación |
 |---|---|---|
-| Rotación del dial y de la aguja | `CompassView.swift` L28–29, L41–42 | easeOut de 0.15 s sobre el valor numérico (C-7) |
+| Rotación del dial y de la aguja | `CompassView.swift` L28–29, L41–42 | easeOut de 0.15 s sobre el valor numérico, **incluida la vuelta larga al cruzar el norte** (C-7: se traspasa el comportamiento de iOS) |
 | Cambio de página de la guía | `OnboardingView.swift` L37 | `withAnimation` por defecto (spring de SwiftUI) al pulsar "Siguiente"; arrastre libre entre páginas |
 | Borrado de fila | `RepeaterViews.swift` L59 | `withAnimation` por defecto |
 | Transición numérica | `AimView.swift` L115 | `.numericText()` |

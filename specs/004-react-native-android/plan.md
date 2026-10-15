@@ -20,19 +20,19 @@ La aceptación es doble: paridad funcional (tests, dorados, banco) y paridad vis
 
 **Language/Version**: TypeScript 5 (estricto) sobre React Native con la nueva arquitectura + Hermes; Kotlin para los módulos nativos; Swift solo para generar los dorados.
 
-**Primary Dependencies**: Expo (prebuild + development build), `react-native-ble-plx`, `react-native-mmkv`, `@shopify/react-native-skia`, `react-native-gesture-handler`, `react-native-reanimated`, `@react-native-community/netinfo`, motor de mapa según C-3, `androidx.core:core-location-altitude`, Google Play Services Location. Ninguna de analítica ni de red adicional (FR-053).
+**Primary Dependencies**: Expo (prebuild + development build), `react-native-ble-plx`, `react-native-mmkv`, `@shopify/react-native-skia`, `react-native-gesture-handler`, `react-native-reanimated`, `@react-native-community/netinfo`, `@maplibre/maplibre-react-native`, `androidx.core:core-location-altitude`, Google Play Services Location ≥ 21.2 (ubicación fusionada + Fused Orientation Provider). Fuentes Inter y JetBrains Mono (OFL); base de íconos Lucide (ISC) o Phosphor (MIT). Servicios de red: teselas OSM, EOX Sentinel-2 cloudless 2016 y OpenFreeMap, todos sin API key ni pago. Ninguna de analítica (FR-053).
 
 **Storage**: MMKV (claves de SF-01), archivos en `filesDir/Sessions` y `cacheDir`.
 
 **Testing**: Jest (núcleo, paridad y contratos), Maestro + pixelmatch (visual), banco y campo con registro.
 
-**Target Platform**: Android, `minSdk 26` / `targetSdk 35` (C-11), teléfonos, solo vertical.
+**Target Platform**: Android, `minSdk 26` / `targetSdk 35` (C-11, decidido), teléfonos, solo vertical.
 
 **Project Type**: app móvil (port).
 
 **Performance Goals**: los de la referencia (SC-006): conexión ≤ 1.0 s, ping ≤ 1.6 s; interfaz a 60 fps durante "En vivo".
 
-**Constraints**: cero funciones nuevas; cero divergencias sin registrar; sin cambios en firmware ni en contratos 001–003; la app iOS no se modifica (salvo C-8 a, solo DEBUG).
+**Constraints**: cero funciones nuevas; cero divergencias sin registrar; sin cambios en firmware ni en contratos 001–003; la app iOS no se modifica en absoluto (C-8).
 
 **Scale/Scope**: 31 archivos Swift → unos 45 módulos TS/TSX + 2 módulos Kotlin; 46 tests portados más los de paridad; 61 estados visuales.
 
@@ -46,7 +46,7 @@ La aceptación es doble: paridad funcional (tests, dorados, banco) y paridad vis
 | IV. Protocolo único | ✅ | Lee `MeshAzimuthTests/Fixtures/lines` directamente; `sync_fixtures.sh` sigue siendo la única copia |
 | V. Test-first | ✅ | Los 46 tests portados se escriben antes que el núcleo (fase 2 de tasks) |
 | VI. Simplicidad | ✅ | Dependencias justificadas en research R-1…R-11; sin persistencia nueva |
-| VII. Paridad iOS | ✅ | Matriz de paridad, correspondencia de plataforma, dorados de Swift, suite visual; las clarificaciones C-1…C-11 bloquean solo sus partes |
+| VII. Paridad iOS | ✅ | Matriz de paridad, correspondencia de plataforma (divergencias aceptadas PM-02, PM-24…PM-27), dorados de Swift, suite visual; clarificaciones C-1…C-11 cerradas el 2026-10-14 |
 
 ## Project Structure
 
@@ -83,7 +83,7 @@ android-rn/
 │   ├── native/          # contratos TS de los módulos Kotlin (heading, altitude)
 │   ├── ui/
 │   │   ├── theme.ts  typography.ts  colors.ts
-│   │   ├── icons/       # 33 glifos (C-1)
+│   │   ├── icons/       # 33 glifos propios (PM-25)
 │   │   └── ios/         # NavBar, GlassCapsule, Sheet, FullScreen, GroupedList, Row, Switch, Slider,
 │   │                    # ProminentButton, BorderedButton, ConfirmationDialog, Alert, Menu, SwipeRow,
 │   │                    # SearchBar, ContentUnavailable, ActivityIndicator, PageControl, Material, NumericText
@@ -105,8 +105,8 @@ android-rn/
 
 ## Orden de construcción
 
-1. **Bloqueantes de decisión**: C-1, C-2, C-3, C-5 y C-8 condicionan la UI, el mapa, los sensores y la suite visual; C-11 condiciona el arranque. El núcleo (US1) no depende de ninguna y empieza ya.
-2. US1 (núcleo) → US4 (enlace con el simulador; la UI básica puede ir sin estilo) → US2/US3 → US5 → US6 transversal desde el día uno en cuanto haya C-8.
+1. **Decisiones**: todas cerradas (sesión del 2026-10-14). Quedan dos verificaciones en dispositivo que pueden ajustar la implementación sin cambiar las decisiones: las unidades y el indicador de norte magnético de FOP (T081) y el filtro de escaneo BLE (R-5).
+2. US1 (núcleo) → US4 (enlace con el simulador; la UI básica puede ir sin estilo) → US2/US3 → US5 → US6 transversal desde el día uno.
 
 ## Complexity Tracking
 

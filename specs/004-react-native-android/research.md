@@ -44,7 +44,7 @@ Cada decisión indica si es **técnica** (de implementación, sin efecto observa
 
 **Salida**: tabla de duraciones y curvas usada por los componentes de FR-060.
 
-## R-7 Motor de mapa — depende de C-3
+## R-7 Motor de mapa — decidido (C-3)
 
 | Criterio | react-native-maps (Google) | MapLibre React Native |
 |---|---|---|
@@ -54,13 +54,11 @@ Cada decisión indica si es **técnica** (de implementación, sin efecto observa
 | Seguimiento con rumbo | sí | sí (componente de ubicación) |
 | Coherencia con tu stack | — | tu decisión registrada de migrar tus proyectos GIS a MapLibre |
 
-La recomendación técnica es MapLibre RN por el control de la caché (PM-01), pero la decisión es del dueño (C-3) porque el satélite cambia de proveedor.
+**Decision**: MapLibre RN. El modo estándar usa las mismas teselas OSM que iOS. El satélite tiene que ser libre, sin API key ni pago: EOX Sentinel-2 cloudless 2016 (CC BY 4.0) con vías y rótulos vectoriales de OpenFreeMap (sin registro ni API key, uso comercial permitido). Se descartaron Google (requiere cuenta con facturación), Esri World Imagery (requiere cuenta de desarrollador ArcGIS) y MapTiler (requiere API key). Divergencia aceptada en PM-02 (10 m de resolución).
 
-## R-8 Fuentes e íconos — depende de C-1 y C-2
+## R-8 Fuentes e íconos — decidido (C-1, C-2)
 
-Las licencias de SF Pro y SF Symbols restringen su uso a plataformas Apple. Esto bloquea un pixel perfect literal en Android y es la causa de C-1 y C-2. Con la opción (a) de cada una:
-- la tipografía alternativa se calibra con el tracking de VA-6 (T060);
-- los 33 íconos se redibujan como SVG en una cuadrícula de 24 × 24 con los pesos de SF (`regular`/`semibold`) y se revisan contra las capturas.
+Las licencias de SF Pro y SF Symbols restringen su uso a plataformas Apple. Esto bloquea un pixel perfect literal en Android y es la causa de C-1 y C-2. **Decision**: Inter + trazos propios para N/E/S/O + JetBrains Mono (PM-26); 33 íconos propios sobre Lucide/Phosphor (PM-25). Como VA-6 excluye el interior de los glifos, lo que se calibra es la **caja**: el tracking de Inter (T060) y el tamaño óptico de cada ícono (T050).
 
 ## R-9 Biblioteca BLE — técnica
 
@@ -78,7 +76,7 @@ Las licencias de SF Pro y SF Symbols restringen su uso a plataformas Apple. Esto
 
 **Pregunta**: el dominio Y automático (si incluye el cero), la selección de marcas, el formato de las etiquetas y la posición del eje (por defecto a la derecha) de `Chart { LineMark }` con `chartXAxis(.hidden)`.
 
-**Método**: capturas iOS del estado `link-live` con series conocidas (C-8), por ejemplo: todas positivas (+8…+11), todas negativas (−12…−6), cruzando el cero, y una constante.
+**Método** (sin tocar la app iOS, C-8): el generador de dorados de macOS renderiza `Chart { LineMark }` con `.chartXAxis(.hidden)` y la misma altura de 56 pt mediante `ImageRenderer`, con 4 series conocidas: todas positivas (+8…+11), todas negativas (−12…−6), cruzando el cero y una constante. Además se mide el dominio y las marcas visibles en las capturas 05_02 y 05_03. Swift Charts en macOS y en iOS comparten el algoritmo de escala; el estilo de las etiquetas se toma de las capturas iOS.
 
 **Salida**: algoritmo de dominio y marcas reproducido en `Sparkline.tsx`, con tests de las 4 series contra las capturas.
 

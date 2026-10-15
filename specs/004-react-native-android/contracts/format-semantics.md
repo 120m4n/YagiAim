@@ -85,7 +85,7 @@ Casos de cobertura obligatorios en los dorados: todos los cuartos de dB en [−3
 |---|---|---|
 | CSV `t_*_iso` | `ISO8601DateFormatter` con `[.withInternetDateTime, .withFractionalSeconds]` y zona del dispositivo: `2026-10-15T07:12:03.215-05:00`; en UTC escribe `Z` | formateador propio: 3 decimales y offset `±HH:MM` o `Z`. Si la fracción se trunca o se redondea **se toma del dorado** (casos con .2154, .2155, .9996 s) |
 | Nombre del CSV | `DateFormatter` `en_US_POSIX`, `yyyyMMdd-HHmmss`, zona del dispositivo | formateador propio |
-| Lista de sesiones y título | `Date.formatted(date: .abbreviated, time: .shortened)`: depende de la configuración regional del dispositivo (la referencia muestra `14 Oct 2026 at 5:28 PM`) | **No** se usa `Intl.DateTimeFormat` con opciones parecidas: produce otros separadores ("14 oct 2026, 17:28"). Tabla de patrones por región, extraída del dorado para las regiones soportadas (C-9: al menos la del iPhone de referencia, `es_CO` y `en_US`). En una región fuera de la tabla, el patrón de `en_US` |
+| Lista de sesiones y título | `Date.formatted(date: .abbreviated, time: .shortened)`: depende de la configuración regional del dispositivo (la referencia muestra `14 Oct 2026 at 5:28 PM`) | **No** se usa `Intl.DateTimeFormat` con opciones parecidas, porque produce otros separadores. Patrón de **`es_CO`** (región de referencia, C-9) y de `en_US` tomados del dorado (el generador formatea con `Locale(identifier:)` explícito). En otra región del dispositivo se usa su patrón si está en la tabla, si no el de `es_CO` |
 | Persistencia | `Date` en `JSONEncoder` = segundos desde 2001-01-01 00:00:00 UTC (`Double`) | `swiftDate = (ms − 978 307 200 000) / 1000` |
 | `location.last.t` | `timeIntervalSince1970` | segundos Unix (`Double`) |
 
@@ -109,7 +109,7 @@ Resolución: `swiftDoubleDescription(x)` (dígitos más cortos de ida y vuelta, 
 
 ## FS-10 Tamaño de caché (`ByteCountFormatter`, `.file`)
 
-Unidades decimales (1 KB = 1000 B), texto según la configuración regional y `Zero KB` para 0. Resolución: implementación propia contra dorados de 0, 1, 999, 1000, 1499, 1500, 999 999, 1 000 000, 12 345 678, 499 999 999, 500 000 000 bytes en las regiones de C-9.
+Unidades decimales (1 KB = 1000 B), texto según la configuración regional y `Zero KB` para 0. Resolución: implementación propia contra dorados de 0, 1, 999, 1000, 1499, 1500, 999 999, 1 000 000, 12 345 678, 499 999 999, 500 000 000 bytes en `es_CO` y `en_US`.
 
 ## FS-11 Búsqueda y orden de la lista
 
