@@ -16,5 +16,5 @@ android {
 
 dependencies {
   // Fused Orientation Provider (≥ 21.2) y ubicación fusionada para saber si el sistema tiene fix (PM-05)
-  implementation "com.google.android.gms:play-services-location:21.4.0"
+  implementation "com.google.android.gms:play-services-location:21.3.0"
 }

@@ -1,165 +1,146 @@
 package expo.modules.meshheading
 
 import android.content.Context
-import android.hardware.GeomagneticField
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.location.Location
 import android.os.Handler
 import android.os.Looper
-import com.google.android.gms.location.DeviceOrientation
-import com.google.android.gms.location.DeviceOrientationListener
-import com.google.android.gms.location.DeviceOrientationRequest
-import com.google.android.gms.location.FusedOrientationProviderClient
-import com.google.android.gms.location.LocationServices
+import android.os.SystemClock
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import java.util.concurrent.Executors
-import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
- * Rumbo e inclinación del teléfono (PM-05, PM-06, PM-07).
+ * Sensores de orientación del teléfono (PM-05, PM-06, PM-07).
  *
- * - Rumbo: Fused Orientation Provider (FOP); si no está disponible (sin giroscopio o sin Play Services), vector de rotación
- *   + GeomagneticField, con la precisión de values[4] o -1 si no existe (C-5).
- * - `usingMagnetic` = el sistema no tiene ningún fix de ubicación (PM-05, resolución 0/1). La ubicación que guarda la app
- *   (`location.last`) no cuenta, porque Core Location tampoco la conoce.
- * - Solo se emite cuando el azimut cambia >= 0.5° (equivale a `headingFilter` de iOS, PM-05 resolución 3).
- * - Pitch: de la misma matriz de rotación (vector de rotación o, sin giroscopio, acelerómetro + magnetómetro), `-orientation[1]` en grados (positivo = el frente sube), a 10 Hz (PM-07).
- *
- * Pendiente de campo (research R-3/R-4, tasks T081/T084): unidades de `headingErrorDegrees` y tasa de muestreo del
- * rumbo; ver specs/004-react-native-android/bench-log.md.
+ * - `startSamples`: entrega a 20 Hz los valores PROMEDIADOS de acelerómetro, magnetómetro sin calibrar y calibrado por el controlador
+ *   y el azimut del vector de rotación (si existe). Toda la fusión (calibración propia con el WMM, declinación, precisión) se hace
+ *   en TypeScript (src/core/headingFusion.ts), donde se prueba con simulaciones. Motivo medido en el Redmi A5: el controlador
+ *   resta un sesgo equivocado a un magnetómetro que lee ~230 µT por el imán del teléfono.
+ * - Pitch: del vector de rotación o, sin él, de acelerómetro + magnetómetro, `-orientation[1]` (PM-07), a la cadencia pedida.
  */
 class HeadingModule : Module() {
   private val context: Context
     get() = appContext.reactContext ?: throw IllegalStateException("Sin contexto de React")
 
   private val main = Handler(Looper.getMainLooper())
-  private val executor = Executors.newSingleThreadExecutor()
-
-  private var fopClient: FusedOrientationProviderClient? = null
-  private var fopListener: DeviceOrientationListener? = null
-  private var stopHeadingSensors: (() -> Unit)? = null
+  private var diag: DiagRecorder? = null
+  private var stopSampleSensors: (() -> Unit)? = null
   private var stopPitchSensors: (() -> Unit)? = null
-
-  @Volatile private var systemLocation: Location? = null
-  private var refreshing = false
-  @Volatile private var fopEmitted = false
-  private var lastAzimuth: Double? = null
-  private var lastAccuracy: Double? = null
-  private var lastMagnetic: Boolean? = null
-
-  private val refreshFix = object : Runnable {
-    override fun run() {
-      if (!refreshing) return
-      try {
-        LocationServices.getFusedLocationProviderClient(context).lastLocation
-          .addOnSuccessListener { if (it != null) systemLocation = it }
-      } catch (_: SecurityException) {
-        // sin permiso de ubicación: se sigue en magnético
-      }
-      main.postDelayed(this, FIX_REFRESH_MS)
-    }
-  }
 
   override fun definition() = ModuleDefinition {
     Name("MeshHeading")
-    Events("onHeading", "onPitch")
+    Events("onSample", "onPitch")
 
     Function("isAvailable") {
       val sm = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-      sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null ||
-        (sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null && sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null)
+      sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null && sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null
     }
 
-    Function("startHeading") {
-      startFixRefresh()
-      lastAzimuth = null
-      if (!startFop()) startRotationVectorHeading()
-    }
+    Function("startSamples") { periodMs: Double -> startSamples(periodMs.toLong()) }
+    Function("stopSamples") { stopSamples() }
+    Function("startPitch") { intervalMs: Double -> startPitch(intervalMs) }
+    Function("stopPitch") { stopPitch() }
 
-    Function("stopHeading") {
-      stopHeading()
+    // FASE 0 (temporal): grabación de diagnóstico de todas las fuentes de orientación.
+    Function("startDiagnostic") { label: String ->
+      diag?.stop()
+      val r = DiagRecorder(context)
+      diag = r
+      r.start(label, false)
     }
-
-    Function("startPitch") { intervalMs: Double ->
-      startPitch(intervalMs)
-    }
-
-    Function("stopPitch") {
-      stopPitch()
+    Function("stopDiagnostic") {
+      diag?.stop()
+      diag = null
     }
 
     OnDestroy {
-      stopHeading()
+      stopSamples()
       stopPitch()
+      diag?.stop()
     }
   }
 
-  // MARK: - Fix del sistema
+  // MARK: - Muestras para la fusión
 
-  private fun startFixRefresh() {
-    if (refreshing) return
-    refreshing = true
-    main.post(refreshFix)
-  }
+  private fun startSamples(periodMs: Long) {
+    if (stopSampleSensors != null) return
+    val sm = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    val accel = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
+    val mag = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) ?: return
+    val unc = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED)
+    val rv = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 
-  // MARK: - Rumbo
+    val sumG = DoubleArray(3); var nG = 0
+    val sumM = DoubleArray(3); var nM = 0
+    val sumU = DoubleArray(3); var nU = 0
+    var rvSin = 0.0; var rvCos = 0.0; var nR = 0
+    val rot = FloatArray(9)
+    val ori = FloatArray(3)
 
-  private fun startFop(): Boolean {
-    if (fopListener != null) return true
-    return try {
-      val client = LocationServices.getFusedOrientationProviderClient(context)
-      val listener = DeviceOrientationListener { o: DeviceOrientation ->
-        fopEmitted = true
-        emitHeading(o.headingDegrees.toDouble(), o.headingErrorDegrees.toDouble())
-      }
-      val request = DeviceOrientationRequest.Builder(DeviceOrientationRequest.OUTPUT_PERIOD_DEFAULT).build()
-      client.requestOrientationUpdates(request, executor, listener)
-        .addOnFailureListener {
-          // sin FOP: respaldo con el vector de rotación
-          fopListener = null
-          fopClient = null
-          startRotationVectorHeading()
+    val listener = object : SensorEventListener {
+      override fun onSensorChanged(e: SensorEvent) {
+        when (e.sensor.type) {
+          Sensor.TYPE_ACCELEROMETER -> { for (i in 0..2) sumG[i] += e.values[i].toDouble(); nG++ }
+          Sensor.TYPE_MAGNETIC_FIELD -> { for (i in 0..2) sumM[i] += e.values[i].toDouble(); nM++ }
+          Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED -> { for (i in 0..2) sumU[i] += e.values[i].toDouble(); nU++ }
+          Sensor.TYPE_ROTATION_VECTOR -> {
+            SensorManager.getRotationMatrixFromVector(rot, e.values)
+            SensorManager.getOrientation(rot, ori)
+            rvSin += sin(ori[0].toDouble()); rvCos += cos(ori[0].toDouble()); nR++
+          }
         }
-      fopClient = client
-      fopListener = listener
-      fopEmitted = false
-      // Un teléfono sin giroscopio puede aceptar el registro y no emitir nunca: sin datos en 2 s se usa el respaldo.
-      main.postDelayed({
-        if (!fopEmitted && fopListener === listener && stopHeadingSensors == null) startRotationVectorHeading()
-      }, FOP_SILENCE_MS)
-      true
-    } catch (_: Throwable) {
-      false
+      }
+      override fun onAccuracyChanged(s: Sensor?, accuracy: Int) = Unit
+    }
+    sm.registerListener(listener, accel, SensorManager.SENSOR_DELAY_GAME)
+    sm.registerListener(listener, mag, SensorManager.SENSOR_DELAY_GAME)
+    if (unc != null) sm.registerListener(listener, unc, SensorManager.SENSOR_DELAY_GAME)
+    if (rv != null) sm.registerListener(listener, rv, SensorManager.SENSOR_DELAY_GAME)
+
+    var running = true
+    val tick = object : Runnable {
+      override fun run() {
+        if (!running) return
+        if (nG > 0 && nM > 0) {
+          val g = listOf(sumG[0] / nG, sumG[1] / nG, sumG[2] / nG)
+          val mc = listOf(sumM[0] / nM, sumM[1] / nM, sumM[2] / nM)
+          val mu = if (nU > 0) listOf(sumU[0] / nU, sumU[1] / nU, sumU[2] / nU) else mc
+          val payload = mutableMapOf<String, Any>(
+            "tNs" to SystemClock.elapsedRealtimeNanos().toDouble(),
+            "g" to g, "mc" to mc, "mu" to mu,
+          )
+          if (nR > 0) payload["rv"] = (Math.toDegrees(atan2(rvSin, rvCos)) + 360.0) % 360.0
+          sendEvent("onSample", payload)
+        }
+        sumG.fill(0.0); sumM.fill(0.0); sumU.fill(0.0); nG = 0; nM = 0; nU = 0; rvSin = 0.0; rvCos = 0.0; nR = 0
+        main.postDelayed(this, periodMs)
+      }
+    }
+    main.postDelayed(tick, periodMs)
+    stopSampleSensors = {
+      running = false
+      main.removeCallbacks(tick)
+      sm.unregisterListener(listener)
     }
   }
 
-  private fun startRotationVectorHeading() {
-    if (stopHeadingSensors != null) return
-    val orientation = FloatArray(3)
-    stopHeadingSensors = registerOrientation(HEADING_PERIOD_US) { rotation, accuracyDeg ->
-      SensorManager.getOrientation(rotation, orientation)
-      var az = Math.toDegrees(orientation[0].toDouble())
-      val loc = systemLocation
-      if (loc != null) {
-        az += GeomagneticField(loc.latitude.toFloat(), loc.longitude.toFloat(), loc.altitude.toFloat(), System.currentTimeMillis()).declination
-      }
-      emitHeading(normalize(az), accuracyDeg)
-    }
+  private fun stopSamples() {
+    stopSampleSensors?.invoke()
+    stopSampleSensors = null
   }
+
+  // MARK: - Inclinación
 
   /**
-   * Fuente de orientación como matriz de rotación. Orden de preferencia:
-   * 1. TYPE_ROTATION_VECTOR (precisión = values[4], en radianes según la documentación; -1 si no existe);
-   * 2. respaldo para teléfonos sin giroscopio ni vector de rotación: acelerómetro + magnetómetro con
-   *    `getRotationMatrix` y filtro paso bajo. Sin dato de precisión en grados, se aproxima con el estado de
-   *    calibración del magnetómetro (ALTA 5°, MEDIA 15°, BAJA 30°, no fiable -1): es una estimación, no una medida.
+   * Matriz de rotación del dispositivo: vector de rotación; sin él, acelerómetro + magnetómetro con filtro paso bajo.
    * Devuelve la función que da de baja los sensores, o null si el teléfono no tiene sensores suficientes.
    */
-  private fun registerOrientation(periodUs: Int, onMatrix: (FloatArray, Double) -> Unit): (() -> Unit)? {
+  private fun registerOrientation(periodUs: Int, onMatrix: (FloatArray) -> Unit): (() -> Unit)? {
     val sm = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     val rotation = FloatArray(9)
     val rv = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
@@ -167,8 +148,7 @@ class HeadingModule : Module() {
       val l = object : SensorEventListener {
         override fun onSensorChanged(e: SensorEvent) {
           SensorManager.getRotationMatrixFromVector(rotation, e.values)
-          val acc = if (e.values.size >= 5 && e.values[4] >= 0f) Math.toDegrees(e.values[4].toDouble()) else -1.0
-          onMatrix(rotation, acc)
+          onMatrix(rotation)
         }
         override fun onAccuracyChanged(s: Sensor?, accuracy: Int) = Unit
       }
@@ -181,61 +161,27 @@ class HeadingModule : Module() {
     val field = FloatArray(3)
     var haveG = false
     var haveM = false
-    var magStatus = SensorManager.SENSOR_STATUS_UNRELIABLE
     val l = object : SensorEventListener {
       override fun onSensorChanged(e: SensorEvent) {
-        val target = if (e.sensor.type == Sensor.TYPE_ACCELEROMETER) gravity else field
-        val have = if (e.sensor.type == Sensor.TYPE_ACCELEROMETER) haveG else haveM
+        val isAccel = e.sensor.type == Sensor.TYPE_ACCELEROMETER
+        val target = if (isAccel) gravity else field
+        val have = if (isAccel) haveG else haveM
         for (i in 0..2) target[i] = if (have) target[i] + LOW_PASS * (e.values[i] - target[i]) else e.values[i]
-        if (e.sensor.type == Sensor.TYPE_ACCELEROMETER) haveG = true else haveM = true
-        if (e.sensor.type != Sensor.TYPE_MAGNETIC_FIELD || !haveG) return
-        if (!SensorManager.getRotationMatrix(rotation, null, gravity, field)) return
-        val acc = when (magStatus) {
-          SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> 5.0
-          SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> 15.0
-          SensorManager.SENSOR_STATUS_ACCURACY_LOW -> 30.0
-          else -> -1.0
-        }
-        onMatrix(rotation, acc)
+        if (isAccel) haveG = true else haveM = true
+        if (!isAccel && haveG && SensorManager.getRotationMatrix(rotation, null, gravity, field)) onMatrix(rotation)
       }
-      override fun onAccuracyChanged(s: Sensor?, accuracy: Int) {
-        if (s?.type == Sensor.TYPE_MAGNETIC_FIELD) magStatus = accuracy
-      }
+      override fun onAccuracyChanged(s: Sensor?, accuracy: Int) = Unit
     }
     sm.registerListener(l, accel, periodUs)
     sm.registerListener(l, mag, periodUs)
     return { sm.unregisterListener(l) }
   }
 
-  private fun emitHeading(azimuth: Double, accuracy: Double) {
-    val magnetic = systemLocation == null
-    val az = normalize(azimuth)
-    val prev = lastAzimuth
-    val moved = prev == null || angularDistance(az, prev) >= HEADING_FILTER_DEG
-    if (!moved && lastAccuracy == accuracy && lastMagnetic == magnetic) return
-    lastAzimuth = az
-    lastAccuracy = accuracy
-    lastMagnetic = magnetic
-    sendEvent("onHeading", mapOf("azimuth" to az, "usingMagnetic" to magnetic, "accuracy" to accuracy))
-  }
-
-  private fun stopHeading() {
-    refreshing = false
-    main.removeCallbacks(refreshFix)
-    fopListener?.let { fopClient?.removeOrientationUpdates(it) }
-    fopListener = null
-    fopClient = null
-    stopHeadingSensors?.invoke()
-    stopHeadingSensors = null
-  }
-
-  // MARK: - Inclinación
-
   private fun startPitch(intervalMs: Double) {
     if (stopPitchSensors != null) return
     val orientation = FloatArray(3)
     var lastEmit = 0L
-    stopPitchSensors = registerOrientation(SensorManager.SENSOR_DELAY_GAME) { rotation, _ ->
+    stopPitchSensors = registerOrientation(SensorManager.SENSOR_DELAY_GAME) { rotation ->
       val now = System.nanoTime() / 1_000_000
       if (now - lastEmit >= intervalMs) {
         lastEmit = now
@@ -251,22 +197,7 @@ class HeadingModule : Module() {
     stopPitchSensors = null
   }
 
-  private fun normalize(d: Double): Double {
-    val r = d % 360.0
-    val n = if (r < 0) r + 360.0 else r
-    return if (n >= 360.0) 0.0 else n
-  }
-
-  private fun angularDistance(a: Double, b: Double): Double {
-    val d = abs(a - b) % 360.0
-    return if (d > 180.0) 360.0 - d else d
-  }
-
   companion object {
-    private const val FIX_REFRESH_MS = 5_000L
-    private const val HEADING_FILTER_DEG = 0.5
-    private const val HEADING_PERIOD_US = 50_000 // 20 Hz; se ajusta con R-3
-    private const val FOP_SILENCE_MS = 2_000L
-    private const val LOW_PASS = 0.2f // respaldo acelerómetro + magnetómetro
+    private const val LOW_PASS = 0.08f
   }
 }

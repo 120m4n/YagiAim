@@ -14,6 +14,12 @@ export interface HeadingEvent {
   accuracy: number;
 }
 
+/** Lo que el conductor de rumbo necesita saber de la ubicación (declinación y campo esperado). */
+export interface HeadingContext {
+  /** Última ubicación conocida (puede ser la de la sesión anterior) y si es un fix vivo (PM-05). */
+  getLocation(): { location: Location | undefined; live: boolean };
+}
+
 /** Puerto con el sistema (expo-location + módulos Kotlin); se sustituye en los tests. */
 export interface LocationDriver {
   getAuthorization(): Promise<Authorization>;
@@ -21,7 +27,7 @@ export interface LocationDriver {
   /** Fixes ya filtrados (2 m) y con la altitud en MSL (PM-04, PM-08). Devuelve la baja. */
   startLocation(onLocation: (l: Location) => void): Promise<() => void>;
   readonly headingAvailable: boolean;
-  startHeading(onHeading: (h: HeadingEvent) => void): () => void;
+  startHeading(onHeading: (h: HeadingEvent) => void, ctx: HeadingContext): () => void;
 }
 
 export interface LocationState {
@@ -111,7 +117,9 @@ export class LocationStore {
       this.store.setState({ authorization: auth });
       if (auth !== 'authorizedWhenInUse' && auth !== 'authorizedAlways') return;
       if (!this.stopLocation) this.stopLocation = await this.driver.startLocation((l) => this.onLocation(l));
-      if (!this.stopHeading && this.driver.headingAvailable) this.stopHeading = this.driver.startHeading((h) => this.onHeading(h));
+      if (!this.stopHeading && this.driver.headingAvailable) this.stopHeading = this.driver.startHeading((h) => this.onHeading(h), {
+        getLocation: () => ({ location: this.state.location, live: !this.state.isCachedLocation }),
+      });
     } finally {
       this.starting = false;
     }

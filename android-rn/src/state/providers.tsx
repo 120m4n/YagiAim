@@ -8,7 +8,7 @@ import { PingerLink } from '../link/pingerLink';
 import { PingerScanner } from '../link/pingerScanner';
 import { SimInputs, SimulatedPinger } from '../link/simulatedPinger';
 import { nativeHaptics } from '../native/haptics';
-import { androidLocationDriver, androidPitchSource } from '../platform/androidDrivers';
+import { androidPitchSource, createAndroidLocationDriver } from '../platform/androidDrivers';
 import { documentFiles } from '../platform/files';
 import { Haptics } from '../platform/haptics';
 import { Keys, Kv } from '../platform/kv';
@@ -45,7 +45,7 @@ export function createServices(): Services {
   const sessions = new SessionStore(documentFiles);
   return {
     kv,
-    location: new LocationStore(androidLocationDriver, kv),
+    location: new LocationStore(createAndroidLocationDriver(kv), kv),
     repeaters: new RepeaterStore(kv),
     motion: new MotionStore(androidPitchSource),
     network: new NetworkStore(netInfoSource),

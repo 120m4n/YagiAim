@@ -22,6 +22,8 @@ export const Keys = {
   repeatersSelected: 'repeaters.selected',
   boomOffset: 'boom.offset',
   locationLast: 'location.last',
+  /** Añadida en Android (PM-28): calibración propia del magnetómetro; no existe en iOS. */
+  magCalibration: 'mag.calibration',
 } as const;
 
 export class Kv {
