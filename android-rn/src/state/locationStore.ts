@@ -28,6 +28,8 @@ export interface LocationDriver {
   startLocation(onLocation: (l: Location) => void): Promise<() => void>;
   readonly headingAvailable: boolean;
   startHeading(onHeading: (h: HeadingEvent) => void, ctx: HeadingContext): () => void;
+  /** Borra la calibración del magnetómetro y la rehace con los datos nuevos (solo Android). */
+  resetCalibration?(): void;
 }
 
 export interface LocationState {
@@ -137,6 +139,10 @@ export class LocationStore {
     const raw = this.rawHeading;
     if (raw === undefined) return;
     this.headingOffset = signedDelta(toBearing, raw);
+  }
+
+  resetCalibration(): void {
+    this.driver.resetCalibration?.();
   }
 
   /** Solo acepta fixes con precisión horizontal ≥ 0 (PM-04: sin precisión → el driver ya los descartó). */

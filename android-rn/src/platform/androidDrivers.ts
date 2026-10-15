@@ -64,7 +64,12 @@ function fieldCache() {
 }
 
 export function createAndroidLocationDriver(kv: Kv): LocationDriver {
+  let current: HeadingFusion | undefined;
   return {
+    resetCalibration() {
+      kv.remove(Keys.magCalibration);
+      current?.resetCalibration();
+    },
     getAuthorization: getLocationAuthorization,
     requestAuthorization: requestLocationAuthorization,
     async startLocation(onLocation) {
@@ -92,6 +97,7 @@ export function createAndroidLocationDriver(kv: Kv): LocationDriver {
           kv.setString(Keys.magCalibration, JSON.stringify(cal));
         },
       });
+      current = fusion;
       const field = fieldCache();
       let debugAt = 0;
       return startSamples((s) => {

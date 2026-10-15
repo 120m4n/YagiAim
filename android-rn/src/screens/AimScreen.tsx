@@ -156,6 +156,7 @@ function AimContent({ onClose }: { onClose: () => void }) {
             {info ? (
               <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
                 <BorderedButton title="Calibrar boom" size="small" disabled={!hasRawHeading} onPress={() => setConfirm(true)} />
+                <BorderedButton title="Recalibrar brújula" size="small" onPress={() => location.resetCalibration()} />
                 {offset !== 0 ? <BorderedButton title={`Restablecer (${formatFixed(offset, 1, true)}°)`} size="small" onPress={() => { location.headingOffset = 0; }} /> : null}
               </View>
             ) : null}
@@ -170,7 +171,7 @@ function AimContent({ onClose }: { onClose: () => void }) {
             <PingerSection repeater={selected} bearing={info?.bearing} />
 
             <Txt variant="footnote" color="secondaryLabel" style={{ textAlign: 'center', paddingHorizontal: 16 }}>
-              Sostén el teléfono plano sobre el boom, con la parte superior hacia el director. Aléjate de metal y del cable coaxial.
+              Para recalibrar la brújula, pulsa «Recalibrar brújula» y mueve el teléfono en ocho durante 30–60 s, lejos de metal.{'\n'}Sostén el teléfono plano sobre el boom, con la parte superior hacia el director. Aléjate de metal y del cable coaxial.
             </Txt>
           </>
         ) : null}

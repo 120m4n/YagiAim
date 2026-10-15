@@ -76,7 +76,7 @@ export function tiltCompensatedAzimuth(g: Vec3, m: Vec3): number | undefined {
 
 export class HeadingFusion {
   private readonly o: FusionOptions;
-  private readonly calibrator = new MagCalibrator();
+  private calibrator = new MagCalibrator();
   private cal: MagCal | undefined;
   private g: [number, number, number] | undefined;
   private lastT: number | undefined;
@@ -95,6 +95,15 @@ export class HeadingFusion {
 
   get calibration(): MagCal | undefined {
     return this.cal;
+  }
+
+  /** Descarta la calibración (guardada y en curso) y empieza a recogerla de nuevo. */
+  resetCalibration(): void {
+    this.cal = undefined;
+    this.calibrator = new MagCalibrator();
+    this.lastFitCount = 0;
+    this.accSmoothed = undefined;
+    this.valid = false;
   }
 
   process(s: SensorSample, env: FusionEnv): FusionOutput | undefined {
