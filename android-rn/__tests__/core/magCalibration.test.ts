@@ -73,3 +73,19 @@ test('directionBin: 26 casillas distintas', () => {
   expect(Math.min(...seen)).toBe(0);
   expect(Math.max(...seen)).toBe(25);
 });
+
+// Regresión (prueba real en el Redmi): giro casi plano + ganancia 0,6 + imán fuerte no debe dar una solución degenerada.
+test('fit: rotación casi plana con ganancia 0,6 conserva centro y escala razonables', () => {
+  const r = rng(11);
+  const c = new MagCalibrator();
+  const off = [48, -84, -187];
+  for (let i = 0; i < 600; i++) {
+    const a = 2 * Math.PI * r();
+    const z = 0.5 * (2 * r() - 1); // eje vertical con poca variación
+    const q = Math.sqrt(1 - z * z);
+    c.add([off[0]! + (31 * q * Math.cos(a)) / 0.6 + 0.3 * gauss(r), off[1]! + (31 * q * Math.sin(a)) / 0.6 + 0.3 * gauss(r), off[2]! + (31 * z) / 0.6 + 0.3 * gauss(r)]);
+  }
+  const fit = c.fit(31)!;
+  expect(Math.hypot(fit.offset[0] - off[0]!, fit.offset[1] - off[1]!, fit.offset[2] - off[2]!)).toBeLessThan(8);
+  for (const k of fit.scale) expect(Math.abs(k - 0.6)).toBeLessThan(0.15);
+});

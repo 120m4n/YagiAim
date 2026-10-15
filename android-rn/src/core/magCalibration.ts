@@ -128,7 +128,21 @@ export class MagCalibrator {
     const pts = this.samples;
     if (pts.length < 30) return undefined;
     const b = [...(initial?.offset ?? this.center())];
-    const s = [...(initial?.scale ?? [1, 1, 1])];
+    // Punto de partida: esfera libre por mínimos cuadrados lineales (centro + radio). Con escalas independientes por eje y un
+    // teléfono que gira casi plano (el eje vertical apenas varía) el ajuste libre se escapa a soluciones degeneradas (centro a
+    // cientos de µT, escalas ~0,1) con residuo bajo; por eso las escalas quedan acotadas a ±25 % de la isotrópica.
+    let s0 = 1;
+    if (!initial) {
+      const A = pts.map((m) => [2 * m[0], 2 * m[1], 2 * m[2], 1]);
+      const y = pts.map((m) => m[0] * m[0] + m[1] * m[1] + m[2] * m[2]);
+      const AtA = Array.from({ length: 4 }, (_, a) => Array.from({ length: 4 }, (_, c) => A.reduce((t, r) => t + r[a]! * r[c]!, 0)));
+      const Aty = Array.from({ length: 4 }, (_, a) => A.reduce((t, r, i) => t + r[a]! * y[i]!, 0));
+      const x = solve(AtA, Aty);
+      const R = x ? Math.sqrt(x[3]! + x[0]! * x[0]! + x[1]! * x[1]! + x[2]! * x[2]!) : NaN;
+      if (x && R > 1e-6) { b.splice(0, 3, x[0]!, x[1]!, x[2]!); s0 = reference / R; }
+    }
+    const s = initial ? [...initial.scale] : [s0, s0, s0];
+    const [lo, hi] = initial ? [Math.min(...s) * 0.8, Math.max(...s) * 1.2] : [s0 * 0.75, s0 * 1.25];
     const resid = (bb: number[], ss: number[]) => pts.map((m) => Math.hypot(ss[0]! * (m[0] - bb[0]!), ss[1]! * (m[1] - bb[1]!), ss[2]! * (m[2] - bb[2]!)) - reference);
     const cost = (r: number[]) => r.reduce((a, x) => a + x * x, 0);
     let r = resid(b, s);
@@ -151,7 +165,7 @@ export class MagCalibrator {
       if (!step) break;
       const nb = [b[0]! + step[0]!, b[1]! + step[1]!, b[2]! + step[2]!];
       const ns = [s[0]! + step[3]!, s[1]! + step[4]!, s[2]! + step[5]!];
-      if (ns.some((x) => !(x > 0.05 && x < 20))) { lambda *= 10; continue; }
+      if (ns.some((x) => !(x > lo && x < hi))) { lambda *= 10; continue; }
       const nr = resid(nb, ns);
       if (cost(nr) < cost(r)) {
         const delta = Math.hypot(...step);
@@ -167,7 +181,7 @@ export class MagCalibrator {
     const scale: Vec3 = [s[0]!, s[1]!, s[2]!];
     const coverage = this.coverage(offset, reference * 0.5);
     const spanOk = this.span() >= reference; // al menos medio diámetro de la esfera en cada eje
-    const sane = scale.every((x) => x > 0.6 && x < 1.6) && Math.hypot(...offset) < 600 && Number.isFinite(rms);
+    const sane = scale.every((x) => x > 0.3 && x < 3) && Math.hypot(...offset) < 600 && Number.isFinite(rms);
     return { offset, scale, rms, coverage, reference, acceptable: sane && spanOk && coverage >= this.o.minCoverage && rms <= this.o.maxRms };
   }
 }
