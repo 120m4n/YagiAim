@@ -1,6 +1,7 @@
 <!--
 Sync Impact Report
-- Version: 1.0.0 → 1.1.0 (MINOR: se añade el principio VII y la plataforma Android/React Native)
+- Version: 1.1.0 → 1.2.0 (MINOR: se añade la plataforma watchOS — app del reloj como espejo de la brújula del iPhone, spec 005)
+- Anterior: 1.0.0 → 1.1.0 (principio VII y plataforma Android/React Native)
 - Principios añadidos: VII. Paridad con la referencia iOS
 - Secciones modificadas: Restricciones de hardware y RF (plataformas), Flujo de desarrollo (gates), Governance (Check I–VII)
 - Plantillas: plan-template.md ⚠ el Constitution Check debe cubrir I–VII
@@ -67,6 +68,7 @@ Sistema para orientar una antena Yagi-Uda hacia un repetidor MeshCore y **valida
 - Banda ISM 902–928 MHz. La potencia máxima configurable DEBE respetar la regulación colombiana vigente (a verificar antes de liberar la fase 001).
 - iOS 17+, SwiftUI y CoreBluetooth: app de referencia MeshAzimuth (`MeshAzimuth/`).
 - Android (React Native): port de la app de referencia según el principio VII (`specs/004-react-native-android`).
+- watchOS 8+ (Apple Watch Series 3 en adelante): app del reloj incluida en la app iOS, sin sensores propios; muestra el estado de apuntamiento que calcula el iPhone (`specs/005-watch-compass-lite`). Es exclusiva de iOS: en el port Android "no aplica".
 
 ## Flujo de desarrollo
 
@@ -78,4 +80,4 @@ Sistema para orientar una antena Yagi-Uda hacia un repetidor MeshCore y **valida
 
 Esta constitución prevalece sobre cualquier otra práctica del repositorio. Las enmiendas requieren PR con el Sync Impact Report actualizado y versionado semántico: MAJOR si se elimina o redefine un principio, MINOR si se añade uno, PATCH si son aclaraciones. Todo `plan.md` DEBE incluir un *Constitution Check* contra I–VII.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14
+**Version**: 1.2.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-15
