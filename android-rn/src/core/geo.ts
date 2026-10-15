@@ -77,3 +77,8 @@ const CARDINALS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO',
 export function cardinal(d: number): string {
   return CARDINALS[Math.trunc((normalize(d) + 11.25) / 22.5) % 16] as string;
 }
+
+/** Ángulo continuo: lleva `next` al equivalente más cercano a `prev` (que puede haber acumulado vueltas), sin saltar al cruzar 0°/360°. */
+export function unwrapAngle(prev: number, next: number): number {
+  return prev + signedDelta(next, normalize(prev));
+}

@@ -1,5 +1,5 @@
 // Port 1:1 de MeshAzimuthTests/GeoTests.swift (12 casos).
-import { bearing, cardinal, circularMean, distance, isAligned, median, normalize, signedDelta } from '../../src/core/geo';
+import { unwrapAngle, bearing, cardinal, circularMean, distance, isAligned, median, normalize, signedDelta } from '../../src/core/geo';
 import { near } from '../helpers/near';
 
 const cali = { latitude: 3.4516, longitude: -76.532 };
@@ -84,4 +84,16 @@ test('medianWithNegativesAndUnsortedInput', () => {
   const input = [3, 1, 2];
   median(input);
   expect(input).toEqual([3, 1, 2]); // no muta la entrada
+});
+
+test('unwrapAngle no brinca al cruzar el norte', () => {
+  near(unwrapAngle(359, 1), 361, 1e-9);
+  near(unwrapAngle(361, 359), 359, 1e-9);
+  near(unwrapAngle(1, 359), -1, 1e-9);
+  let a = 350;
+  for (const h of [355, 359, 2, 6, 3, 358, 352]) {
+    const n = unwrapAngle(a, h);
+    expect(Math.abs(n - a)).toBeLessThan(10);
+    a = n;
+  }
 });
