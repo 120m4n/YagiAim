@@ -130,7 +130,7 @@ function AimContent({ onClose }: { onClose: () => void }) {
                   ) : null}
                   <Row k="Precisión brújula" v={accuracyText} onLongPress={toggleDiag} />
                   {diag ? <Txt variant="caption" color="target">{diag}</Txt> : null}
-                  {diag && dbg ? <Txt variant="caption" color="target" tabular>{`cal ${dbg.calibrated ? 'sí' : 'no'} · cobertura ${dbg.coverage}/26 · rms ${dbg.rms === undefined ? '—' : formatFixed(dbg.rms, 1)} µT · campo ${formatFixed(dbg.dev * 100, 0, true)} % · inclinación ${formatFixed(dbg.dipError, 0, true)}°`}</Txt> : null}
+                  {dbg ? <Txt variant="caption" color="target" tabular>{`cal ${dbg.calibrated ? 'sí' : 'no'} · cobertura ${dbg.coverage}/26 · rms ${dbg.rms === undefined ? '—' : formatFixed(dbg.rms, 1)} µT · campo ${formatFixed(dbg.dev * 100, 0, true)} % · inclinación ${formatFixed(dbg.dipError, 0, true)}° · muestras ${dbg.samples} · ajuste ${dbg.lastFit}`}</Txt> : null}
                   <Row k="Precisión GPS" v={loc ? `±${formatFixed(loc.horizontalAccuracy, 0)} m` : '—'} />
                 </View>
               </>

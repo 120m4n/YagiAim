@@ -5,6 +5,7 @@
 // por el imán del teléfono y ese sesgo se mueve ±20 µT entre sesiones). Con un campo terrestre de 31 µT eso son decenas de grados.
 import { applyCal, MagCalibrator, type MagCal, type Vec3 } from './magCalibration';
 import { signedDelta, normalize } from './geo';
+import { formatFixed } from './formatC';
 
 export interface SensorSample {
   /** Marca de tiempo del sensor (ns). */
@@ -32,7 +33,7 @@ export interface FusionOutput {
   /** Precisión en grados, con histéresis alrededor de 15°. */
   accuracy: number;
   /** Diagnóstico. */
-  debug: { magneticAzimuth: number; correction: number; calibrated: boolean; dev: number; dipError: number; rms: number | undefined; coverage: number };
+  debug: { magneticAzimuth: number; correction: number; calibrated: boolean; dev: number; dipError: number; rms: number | undefined; coverage: number; samples: number; lastFit: string };
 }
 
 export interface FusionOptions {
@@ -87,6 +88,7 @@ export class HeadingFusion {
   private exitTimer = 0;
   private lastFitT = 0;
   private lastFitCount = 0;
+  private lastFit = 'sin ajuste';
 
   constructor(opts: Partial<FusionOptions> = {}) {
     this.o = { ...DEFAULTS, ...opts };
@@ -102,6 +104,7 @@ export class HeadingFusion {
     this.cal = undefined;
     this.calibrator = new MagCalibrator();
     this.lastFitCount = 0;
+    this.lastFit = 'sin ajuste';
     this.accSmoothed = undefined;
     this.valid = false;
   }
@@ -125,6 +128,7 @@ export class HeadingFusion {
       this.lastFitT = s.tNs / 1e9;
       this.lastFitCount = this.calibrator.count;
       const fit = this.calibrator.fit(F, this.cal);
+      this.lastFit = fit ? `${fit.acceptable ? 'ok' : 'rechazado'} cob ${fit.coverage} rms ${formatFixed(fit.rms, 1)}` : 'insuficiente';
       if (fit?.acceptable && (!this.cal || fit.rms <= this.cal.rms * 1.5 + 0.5 || fit.coverage > this.cal.coverage)) {
         const { acceptable: _ok, ...cal } = fit;
         void _ok;
@@ -188,7 +192,7 @@ export class HeadingFusion {
       azimuth: normalize(magnetic + declination),
       usingMagnetic,
       accuracy,
-      debug: { magneticAzimuth: magnetic, correction: rv === undefined ? 0 : signedDelta(magnetic, rv), calibrated: !!this.cal, dev, dipError, rms: this.cal?.rms, coverage: this.cal?.coverage ?? this.calibrator.coverage(undefined, (env.field?.total ?? 0) * 0.5) },
+      debug: { magneticAzimuth: magnetic, correction: rv === undefined ? 0 : signedDelta(magnetic, rv), calibrated: !!this.cal, dev, dipError, rms: this.cal?.rms, coverage: this.cal?.coverage ?? this.calibrator.coverage(undefined, (env.field?.total ?? 0) * 0.5), samples: this.calibrator.count, lastFit: this.lastFit },
     };
   }
 }

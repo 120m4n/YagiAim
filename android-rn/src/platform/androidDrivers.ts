@@ -2,6 +2,7 @@
 // (PM-05) e inclinación (PM-07).
 import * as ExpoLocation from 'expo-location';
 import type { Location } from '../core/aimInfo';
+import { formatFixed } from '../core/formatC';
 import { HeadingFusion } from '../core/headingFusion';
 import type { MagCal } from '../core/magCalibration';
 import { decimalYear, magneticField } from '../core/wmm';
@@ -68,6 +69,7 @@ export function createAndroidLocationDriver(kv: Kv): LocationDriver {
   return {
     resetCalibration() {
       kv.remove(Keys.magCalibration);
+      console.log('MA_CAL reset: calibración borrada, recogiendo datos nuevos');
       current?.resetCalibration();
     },
     getAuthorization: getLocationAuthorization,
@@ -91,6 +93,7 @@ export function createAndroidLocationDriver(kv: Kv): LocationDriver {
       const fusion = new HeadingFusion({
         ...(loadCalibration(kv) && { initialCal: loadCalibration(kv) as MagCal }),
         onCalibration: (cal) => {
+          console.log(`MA_CAL aceptada: rms ${formatFixed(cal.rms, 2)} µT cobertura ${cal.coverage}/26`);
           // Como mucho una escritura cada 10 s
           if (Date.now() - lastSaved < 10_000) return;
           lastSaved = Date.now();
@@ -109,6 +112,8 @@ export function createAndroidLocationDriver(kv: Kv): LocationDriver {
         if (Date.now() - debugAt > 500) {
           debugAt = Date.now();
           headingDebug.setState({ last: out.debug });
+          const x = out.debug;
+          console.log(`MA_CAL cal=${x.calibrated ? 1 : 0} muestras=${x.samples} cob=${x.coverage}/26 rms=${x.rms === undefined ? '-' : formatFixed(x.rms, 1)} campo=${formatFixed(x.dev * 100, 0)}% incl=${formatFixed(x.dipError, 0)}° ajuste=[${x.lastFit}] prec=${formatFixed(out.accuracy, 1)}° mag=${formatFixed(x.magneticAzimuth, 1)}° az=${formatFixed(out.azimuth, 1)}°`);
         }
       });
     },
