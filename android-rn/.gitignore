@@ -1,0 +1,7 @@
+node_modules/
+android/
+.expo/
+dist/
+*.apk
+*.aab
+/visual/out/
