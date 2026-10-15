@@ -1,4 +1,4 @@
-import { Children, useRef, useState, type ReactNode } from 'react';
+import { Children, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -133,20 +133,20 @@ export function SwipeRow({ children, leading, trailing }: { children: ReactNode;
   const p = useColors();
   const x = useSharedValue(0);
   const [w, setW] = useState(0);
-  const wRef = useRef(0);
+  const width = useSharedValue(0); // compartido con el worklet (una ref de React se congela en 0 allí)
   const ACTION_W = 84;
   const fire = (a?: SwipeAction) => a?.onPress();
   const pan = Gesture.Pan()
     .activeOffsetX([-12, 12])
     .failOffsetY([-12, 12])
     .onUpdate((e) => {
-      const lo = trailing ? -wRef.current : 0;
+      const lo = trailing ? -width.value : 0;
       const hi = leading ? ACTION_W : 0;
       x.value = Math.min(hi, Math.max(lo, e.translationX));
     })
     .onEnd(() => {
-      if (trailing && x.value < -wRef.current / 2) {
-        x.value = withTiming(-wRef.current, { duration: 160 }, () => runOnJS(fire)(trailing));
+      if (trailing && x.value < -width.value / 2) {
+        x.value = withTiming(-width.value, { duration: 160 }, () => runOnJS(fire)(trailing));
       } else if (trailing && x.value < -ACTION_W / 2) {
         x.value = withTiming(-ACTION_W);
       } else if (leading && x.value > ACTION_W / 2) {
@@ -177,7 +177,7 @@ export function SwipeRow({ children, leading, trailing }: { children: ReactNode;
     <View
       style={{ overflow: 'hidden' }}
       onLayout={(e) => {
-        wRef.current = e.nativeEvent.layout.width;
+        width.value = e.nativeEvent.layout.width;
         setW(e.nativeEvent.layout.width);
       }}
     >

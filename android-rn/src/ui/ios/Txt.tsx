@@ -1,6 +1,4 @@
-import { useEffect } from 'react';
 import { Text, View, type StyleProp, type TextProps, type TextStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { useColors, type Palette } from '../colors';
 import { Icon } from '../icons/Icon';
 import { textStyle, type TextOptions, type Variant } from '../typography';
@@ -19,18 +17,12 @@ export function Txt({ variant = 'body', color = 'label', bold, semibold, tabular
   return <Text {...rest} style={[textStyle(variant, { bold, semibold, tabular }), { color: c }, style]} />;
 }
 
-/** `contentTransition(.numericText())`: el texto entra con un breve fundido/escala al cambiar. */
-export function NumericText({ children, ...rest }: TxtProps) {
-  const k = useSharedValue(1);
-  useEffect(() => {
-    k.value = withSequence(withTiming(0.6, { duration: 0 }), withTiming(1, { duration: 180 }));
-  }, [children, k]);
-  const a = useAnimatedStyle(() => ({ opacity: k.value, transform: [{ scale: 0.96 + 0.04 * k.value }] }));
-  return (
-    <Animated.View style={a}>
-      <Txt {...rest}>{children}</Txt>
-    </Animated.View>
-  );
+/**
+ * `contentTransition(.numericText())`. El fundido por cambio de dígito se quitó (plan D): con el rumbo cambiando varias veces por
+ * segundo hacía parpadear el texto. Cifras tabulares para que el ancho no oscile.
+ */
+export function NumericText(props: TxtProps) {
+  return <Txt tabular {...props} />;
 }
 
 export interface LabelProps extends TxtProps {

@@ -29,7 +29,7 @@ const messageFor = (e: MeasureError): string | undefined => {
 export function PingerSection({ repeater, bearing }: { repeater: Repeater; bearing: number | undefined }) {
   const { link, recorder, location, haptics } = useServices();
   const operational = useLink((s) => isOperational(s));
-  const heading = useLocation((s) => headingOf(s));
+  const hasHeading = useLocation((s) => headingOf(s) !== undefined);
   const accuracy = useLocation((s) => s.headingAccuracy);
   const measuring = useRecorder((s) => s.measuring);
   const done = useRecorder((s) => s.done);
@@ -41,8 +41,10 @@ export function PingerSection({ repeater, bearing }: { repeater: Repeater; beari
   const [problem, setProblem] = useState<string | undefined>();
 
   useEffect(() => {
-    link.simInputs.heading = heading;
-  }, [heading, link]);
+    const set = () => { link.simInputs.heading = headingOf(location.store.getState()); };
+    set();
+    return location.store.subscribe(set); // sin estado de React: el rumbo no repinta esta sección
+  }, [link, location]);
   useEffect(() => {
     link.simInputs.target = bearing;
   }, [bearing, link]);
@@ -54,7 +56,7 @@ export function PingerSection({ repeater, bearing }: { repeater: Repeater; beari
     if (link.isOperational && hash !== undefined) void link.configure(hash).catch(() => undefined);
   }, [hash]);
 
-  const canMeasure = operational && !measuring && hash !== undefined && heading !== undefined;
+  const canMeasure = operational && !measuring && hash !== undefined && hasHeading;
   const calibrationValid = headingIsValid(accuracy);
 
   const measure = () => {

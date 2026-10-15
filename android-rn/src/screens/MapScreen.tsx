@@ -9,7 +9,6 @@ import { cardinal, type Coordinate } from '../core/geo';
 import { regionToArray, savedRegion, type Region } from '../core/mapRegion';
 import { randomUuid } from '../core/uuid';
 import { Keys } from '../platform/kv';
-import { headingOf } from '../state/locationStore';
 import { selectedOf } from '../state/repeaterStore';
 import { useLocation, useOnline, useRepeaters, useServices } from '../state/providers';
 import { SchemeContext } from '../ui/colors';
@@ -36,7 +35,6 @@ export function MapScreen() {
   const selectedID = useRepeaters((s) => s.selectedID);
   const selected = useRepeaters(selectedOf);
   const loc = useLocation((s) => s.location);
-  const heading = useLocation((s) => headingOf(s));
   const cached = useLocation((s) => s.isCachedLocation);
   const online = useOnline();
 
@@ -54,7 +52,7 @@ export function MapScreen() {
     void location.start(); // .onAppear { loc.start() }
   }, [location]);
 
-  const info = selected ? aimInfo(loc, selected, heading) : undefined;
+  const info = selected ? aimInfo(loc, selected, undefined) : undefined;
 
   return (
     <View style={{ flex: 1, backgroundColor: Theme.navy }}>
@@ -113,7 +111,7 @@ export function MapScreen() {
                 style={{ marginHorizontal: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 18, backgroundColor: navy94, borderWidth: 1, borderColor: accent50 }}
               >
                 <View pointerEvents="none" style={{ width: 84, height: 84 }}>
-                  <CompassView size={84} heading={heading} target={info?.bearing} />
+                  <CompassView size={84} target={info?.bearing} />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Txt variant="headline" color="#FFFFFF">{selected.name}</Txt>

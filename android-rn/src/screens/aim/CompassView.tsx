@@ -1,22 +1,31 @@
-// CompassView.swift — rosa de los vientos que gira con el teléfono (Skia). El triángulo fijo arriba es la dirección del
-// boom de la Yagi; la aguja naranja es el repetidor. Animación easeOut de 0.15 s sobre el valor numérico, INCLUIDA la vuelta
-// larga al cruzar el norte (C-7: se traspasa el comportamiento de iOS).
-import { useEffect, useMemo, useState } from 'react';
+// CompassView.swift — rosa de los vientos que gira con el teléfono (Skia). El triángulo fijo arriba es la dirección del boom
+// de la Yagi; la aguja naranja es el repetidor.
+//
+// Rendimiento (plan D): el rumbo NO entra por props. La brújula se suscribe a la tienda de ubicación y mueve valores
+// compartidos de Reanimated, así que el rumbo (~20 Hz) no repinta ni React ni la pantalla que la contiene; solo cambia de
+// estado React lo raro: alineado/no alineado, hay/no hay rumbo, tamaño.
+// Divergencias respecto a iOS (registradas en bench-log.md): el ángulo se anima en continuo por el camino corto (iOS gira casi
+// una vuelta al pasar de 359° a 1°, C-7), con una interpolación lineal corta que continúa sin reiniciar la curva (iOS: easeOut 0.15 s)
+// y la vibración de «alineado» espera 300 ms de permanencia.
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Canvas, Group, Path, Skia, Text as SkText, useFont } from '@shopify/react-native-skia';
 import { Easing, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { formatFixed } from '../../core/formatC';
-import { isAligned, signedDelta } from '../../core/geo';
-import { useColors } from '../../ui/colors';
+import { isAligned, signedDelta, unwrapAngle } from '../../core/geo';
+import { headingOf, type LocationState } from '../../state/locationStore';
 import { useServices } from '../../state/providers';
+import { useColors } from '../../ui/colors';
 
-const MS = 150;
+const FOLLOW_MS = 100; // algo mayor que el periodo de los eventos (50 ms): las interpolaciones se solapan y no hay arranques bruscos
+const ALIGN_DWELL_MS = 300;
+const LABEL_EVERY_MS = 1000;
 const RAD = Math.PI / 180;
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro exige require() para los recursos
 const MONO = require('../../../assets/fonts/JetBrainsMono_400Regular.ttf');
+const NUMBERS = [30, 60, 120, 150, 210, 240, 300, 330];
 
 export interface CompassViewProps {
-  heading: number | undefined; // rumbo actual del teléfono (verdadero)
   target: number | undefined; // azimut al repetidor
   tolerance?: number; // ° para considerar "alineado"
   onAlignedChange?: (aligned: boolean) => void;
@@ -39,43 +48,82 @@ function letterPath(letter: string, w: number, h: number) {
   return p;
 }
 
-export function CompassView({ heading, target, tolerance = 3, onAlignedChange, size: fixed }: CompassViewProps) {
+export function CompassView({ target, tolerance = 3, onAlignedChange, size: fixed }: CompassViewProps) {
   const colors = useColors();
-  const { haptics } = useServices();
+  const { haptics, location } = useServices();
+  const store = location.store;
   const [width, setWidth] = useState(fixed ?? 0);
   const size = fixed ?? width;
   const [aligned, setAligned] = useState(false);
+  const [needleOn, setNeedleOn] = useState(false);
+  const [label, setLabel] = useState('Sin datos de brújula');
 
-  const delta = heading !== undefined && target !== undefined ? signedDelta(target, heading) : undefined;
+  const start = headingOf(store.getState());
+  const rot = useSharedValue(start ?? 0);
+  const needle = useSharedValue(0);
+  const contRot = useRef(start ?? 0);
+  const contNeedle = useRef(0);
+  const alignedRef = useRef(false);
+  const labelAt = useRef(0);
+  const inputs = useRef({ target, tolerance });
+  inputs.current = { target, tolerance };
 
+  // Un solo suscriptor: mueve los valores compartidos y solo toca el estado de React cuando cambia algo discreto.
+  const apply = (s: LocationState) => {
+    const h = headingOf(s);
+    const { target: t, tolerance: tol } = inputs.current;
+    if (h === undefined) {
+      setNeedleOn(false);
+      if (alignedRef.current) { alignedRef.current = false; setAligned(false); }
+      setLabel('Sin datos de brújula');
+      return;
+    }
+    contRot.current = unwrapAngle(contRot.current, h);
+    rot.value = withTiming(contRot.current, { duration: FOLLOW_MS, easing: Easing.linear });
+    if (t === undefined) {
+      setNeedleOn(false);
+      if (alignedRef.current) { alignedRef.current = false; setAligned(false); }
+      setLabel('Sin datos de brújula');
+      return;
+    }
+    const d = signedDelta(t, h);
+    contNeedle.current = unwrapAngle(contNeedle.current, d);
+    needle.value = withTiming(contNeedle.current, { duration: FOLLOW_MS, easing: Easing.linear });
+    setNeedleOn(true);
+    const now = isAligned(d, tol, alignedRef.current);
+    if (now !== alignedRef.current) { alignedRef.current = now; setAligned(now); }
+    const at = Date.now();
+    if (at - labelAt.current >= LABEL_EVERY_MS || now !== aligned) {
+      labelAt.current = at;
+      setLabel(now ? `Alineado con el repetidor, azimut ${Math.trunc(t)} grados` : `Gira ${formatFixed(Math.abs(d), 0)} grados a la ${d > 0 ? 'derecha' : 'izquierda'}`);
+    }
+  };
+  const applyRef = useRef(apply);
+  applyRef.current = apply;
   useEffect(() => {
-    const now = isAligned(delta, tolerance, aligned);
-    if (now !== aligned) setAligned(now);
-  }, [delta, tolerance, aligned]);
+    applyRef.current(store.getState());
+    return store.subscribe((s) => applyRef.current(s));
+  }, [store]);
+  useEffect(() => applyRef.current(store.getState()), [target, tolerance, store]);
 
+  // Vibración: solo tras 300 ms de permanencia alineado; se corta al salir.
   useEffect(() => {
     onAlignedChange?.(aligned);
-    if (aligned) haptics.startAligned();
-    else haptics.stop();
+    if (!aligned) {
+      haptics.stop();
+      return;
+    }
+    const t = setTimeout(() => haptics.startAligned(), ALIGN_DWELL_MS);
+    return () => clearTimeout(t);
   }, [aligned]);
-
-  // Animación numérica (sin tomar el camino corto): 359° → 1° da casi una vuelta completa, como en SwiftUI.
-  const rot = useSharedValue(heading ?? 0);
-  const needle = useSharedValue(delta ?? 0);
-  useEffect(() => {
-    rot.value = withTiming(heading ?? 0, { duration: MS, easing: Easing.out(Easing.quad) });
-  }, [heading, rot]);
-  useEffect(() => {
-    needle.value = withTiming(delta ?? 0, { duration: MS, easing: Easing.out(Easing.quad) });
-  }, [delta, needle]);
 
   const c = size / 2;
   const dialTransform = useDerivedValue(() => [{ rotate: -rot.value * RAD }]);
   const needleTransform = useDerivedValue(() => [{ rotate: needle.value * RAD }]);
-
   const numFont = useFont(MONO, Math.max(size * 0.035, 1));
   const half = Math.max(tolerance, 1);
 
+  // Todo lo estático se construye una sola vez por tamaño.
   const geometry = useMemo(() => {
     const ticks = Skia.Path.Make();
     const major = Skia.Path.Make();
@@ -85,31 +133,26 @@ export function CompassView({ heading, target, tolerance = 3, onAlignedChange, s
       const h = isMajor ? size * 0.06 : isMid ? size * 0.04 : size * 0.025;
       const r = size * 0.44; // el centro del rectángulo está a 0.44·s del centro
       const a = i * 5 * RAD;
-      const x0 = c + Math.sin(a) * (r - h / 2);
-      const y0 = c - Math.cos(a) * (r - h / 2);
-      const x1 = c + Math.sin(a) * (r + h / 2);
-      const y1 = c - Math.cos(a) * (r + h / 2);
-      (isMajor ? major : ticks).moveTo(x0, y0);
-      (isMajor ? major : ticks).lineTo(x1, y1);
+      const dst = isMajor ? major : ticks;
+      dst.moveTo(c + Math.sin(a) * (r - h / 2), c - Math.cos(a) * (r - h / 2));
+      dst.lineTo(c + Math.sin(a) * (r + h / 2), c - Math.cos(a) * (r + h / 2));
     }
     const letters = ['N', 'E', 'S', 'O'].map((l, i) => {
       const h = size * 0.07 * 0.72;
       const w = h * 0.7;
       return { l, i, path: letterPath(l, w, h), w, h };
     });
-    // Aguja: (midX,minY) (maxX,maxY) (midX,maxY−0.6w) (minX,maxY) en una caja de 0.07s × 0.42s centrada 0.21s por encima del centro.
     const nw = size * 0.07;
     const nh = size * 0.42;
     const top = c - size * 0.42;
     const needlePath = Skia.Path.Make();
     needlePath.moveTo(c, top); needlePath.lineTo(c + nw / 2, top + nh); needlePath.lineTo(c, top + nh - nw * 0.6); needlePath.lineTo(c - nw / 2, top + nh); needlePath.close();
-    // Triángulo fijo (apunta hacia abajo), centrado a 0.49s por encima del centro.
     const tw = size * 0.06;
     const th = size * 0.05;
     const ty = c - size * 0.49 - th / 2;
     const tri = Skia.Path.Make();
     tri.moveTo(c, ty + th); tri.lineTo(c - tw / 2, ty); tri.lineTo(c + tw / 2, ty); tri.close();
-    return { ticks, major, letters, needlePath, tri };
+    return { ticks, major, letters, needlePath, tri, ring: Skia.Path.Make().addCircle(c, c, size / 2), dot: Skia.Path.Make().addCircle(c, c, size * 0.02) };
   }, [size, c]);
 
   const beam = useMemo(() => {
@@ -120,28 +163,17 @@ export function CompassView({ heading, target, tolerance = 3, onAlignedChange, s
     return p;
   }, [c, size, half]);
 
+  const numberWidths = useMemo(() => (numFont ? NUMBERS.map((d) => numFont.measureText(String(d)).width) : []), [numFont]);
+
   const activeColor = aligned ? colors.green : colors.target;
   const secondary = colors.secondaryLabel;
-  const numbers = [30, 60, 120, 150, 210, 240, 300, 330];
-
-  const label =
-    delta === undefined || target === undefined
-      ? 'Sin datos de brújula'
-      : aligned
-        ? `Alineado con el repetidor, azimut ${Math.trunc(target)} grados`
-        : `Gira ${formatFixed(Math.abs(delta), 0)} grados a la ${delta > 0 ? 'derecha' : 'izquierda'}`;
 
   return (
-    <View
-      style={{ width: fixed ?? '100%', aspectRatio: 1 }}
-      onLayout={(e) => fixed === undefined && setWidth(e.nativeEvent.layout.width)}
-      accessible
-      accessibilityLabel={label}
-    >
+    <View style={{ width: fixed ?? '100%', aspectRatio: 1 }} onLayout={(e) => fixed === undefined && setWidth(e.nativeEvent.layout.width)} accessible accessibilityLabel={label}>
       {size > 0 ? (
         <Canvas style={{ width: size, height: size }}>
           <Group transform={dialTransform} origin={{ x: c, y: c }}>
-            <Path path={Skia.Path.Make().addCircle(c, c, size / 2)} style="stroke" strokeWidth={1.5} color={secondary} opacity={0.4} />
+            <Path path={geometry.ring} style="stroke" strokeWidth={1.5} color={secondary} opacity={0.4} />
             <Path path={geometry.ticks} style="stroke" strokeWidth={1} color={secondary} opacity={0.55} />
             <Path path={geometry.major} style="stroke" strokeWidth={2} color={secondary} />
             {geometry.letters.map(({ l, i, path, w, h }) => (
@@ -152,25 +184,22 @@ export function CompassView({ heading, target, tolerance = 3, onAlignedChange, s
               </Group>
             ))}
             {numFont
-              ? numbers.map((d) => {
-                  const w = numFont.measureText(String(d)).width;
-                  return (
-                    <Group key={d} transform={[{ rotate: d * RAD }]} origin={{ x: c, y: c }}>
-                      <SkText x={c - w / 2} y={c - size * 0.34 + size * 0.0125} text={String(d)} font={numFont} color={secondary} />
-                    </Group>
-                  );
-                })
+              ? NUMBERS.map((d, k) => (
+                  <Group key={d} transform={[{ rotate: d * RAD }]} origin={{ x: c, y: c }}>
+                    <SkText x={c - (numberWidths[k] ?? 0) / 2} y={c - size * 0.34 + size * 0.0125} text={String(d)} font={numFont} color={secondary} />
+                  </Group>
+                ))
               : null}
           </Group>
           {/* Haz de la Yagi (±tolerancia): fijo, apunta al frente del teléfono */}
           <Path path={beam} color={aligned ? colors.green : secondary} opacity={0.18} />
-          {delta !== undefined ? (
+          {needleOn ? (
             <Group transform={needleTransform} origin={{ x: c, y: c }}>
               <Path path={geometry.needlePath} color={activeColor} />
             </Group>
           ) : null}
           <Path path={geometry.tri} color={aligned ? colors.green : colors.label} />
-          <Path path={Skia.Path.Make().addCircle(c, c, size * 0.02)} color={colors.label} />
+          <Path path={geometry.dot} color={colors.label} />
         </Canvas>
       ) : null}
     </View>

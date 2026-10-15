@@ -1,15 +1,20 @@
 // AimView.swift — pantalla de apuntamiento a pantalla completa.
-import { useEffect, useState } from 'react';
-import { AppState, ScrollView, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AppState, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aimInfo, distanceText, type AimInfo } from '../core/aimInfo';
 import { formatFixed } from '../core/formatC';
 import { cardinal } from '../core/geo';
+import { startDiagnostic, stopDiagnostic } from '../native/heading';
 import { allowScreenOff, keepScreenOn } from '../platform/keepAwake';
 import { Keys } from '../platform/kv';
 import { headingOf } from '../state/locationStore';
 import { selectedOf } from '../state/repeaterStore';
-import { useLocation, useMotionPitch, useRepeaters, useServices } from '../state/providers';
+import { useStore } from 'zustand';
+import { headingDebug } from '../state/headingDebug';
+import { angleChanged, numberChanged } from '../state/throttle';
+import { useThrottled } from '../state/useThrottled';
+import { useLocation, useRepeaters, useServices } from '../state/providers';
 import { BorderedButton } from '../ui/ios/Buttons';
 import { ActivityIndicator, Slider } from '../ui/ios/Controls';
 import { NavBar, NavTextButton } from '../ui/ios/NavBar';
@@ -21,12 +26,12 @@ import { CompassView } from './aim/CompassView';
 import { PingerSection } from './aim/PingerSection';
 import { LocationDeniedBanner } from './PermissionBanner';
 
-function Row({ k, v }: { k: string; v: string }) {
+function Row({ k, v, onLongPress }: { k: string; v: string; onLongPress?: () => void }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 24 }}>
+    <Pressable onLongPress={onLongPress} disabled={!onLongPress} style={{ flexDirection: 'row', gap: 24 }}>
       <Txt color="secondaryLabel" tabular style={{ width: 170 }}>{k}</Txt>
       <Txt bold tabular>{v}</Txt>
-    </View>
+    </Pressable>
   );
 }
 
@@ -50,15 +55,30 @@ function AimContent({ onClose }: { onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const selected = useRepeaters(selectedOf);
   const loc = useLocation((s) => s.location);
-  const heading = useLocation((s) => headingOf(s));
-  const rawHeading = useLocation((s) => s.rawHeading);
+  // Los textos se actualizan a ≤ 5 Hz y con histéresis; la brújula se mueve aparte (CompassView se suscribe sola).
+  const heading = useThrottled(location.store, headingOf, { intervalMs: 200, changed: angleChanged(0.7) });
+  const hasRawHeading = useLocation((s) => s.rawHeading !== undefined);
   const accuracy = useLocation((s) => s.headingAccuracy);
   const offset = useLocation((s) => s.headingOffset);
   const magnetic = useLocation((s) => s.usingMagneticFallback);
-  const pitch = useMotionPitch();
+  const pitch = useThrottled(motion.store, (m) => m.pitch, { intervalMs: 250, changed: numberChanged(0.3) });
   const [tolerance, setToleranceState] = useState(() => kv.getNumber(Keys.tolerance, 3.0));
   const [aligned, setAligned] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  // FASE 0 (temporal): mantener pulsado «Precisión brújula» graba 30 s; cada pulsación usa la siguiente etiqueta.
+  const [diag, setDiag] = useState<string | undefined>();
+  const dbg = useStore(headingDebug, (d) => d.last);
+  const diagRun = useRef(0);
+  const toggleDiag = () => {
+    if (diag?.startsWith('Grabando')) return;
+    const label = ['reposo', 'giro', 'metal', 'extra'][diagRun.current++ % 4] as string;
+    const path = startDiagnostic(label);
+    setDiag(`Grabando ${label} (30 s)…`);
+    setTimeout(() => {
+      stopDiagnostic();
+      setDiag(`Guardado: ${path}`);
+    }, 30_000);
+  };
 
   // onAppear / onDisappear / scenePhase
   useEffect(() => {
@@ -90,7 +110,7 @@ function AimContent({ onClose }: { onClose: () => void }) {
         {selected ? (
           <>
             <View style={{ paddingHorizontal: 24 }}>
-              <CompassView heading={heading} target={info?.bearing} tolerance={tolerance} onAlignedChange={setAligned} />
+              <CompassView target={info?.bearing} tolerance={tolerance} onAlignedChange={setAligned} />
             </View>
             {info ? (
               <>
@@ -108,7 +128,9 @@ function AimContent({ onClose }: { onClose: () => void }) {
                       {info.elevation !== undefined ? <Row k="Ajuste vertical" v={`${info.elevation - pitch >= 0 ? 'Sube' : 'Baja'} ${formatFixed(Math.abs(info.elevation - pitch), 1)}°`} /> : null}
                     </>
                   ) : null}
-                  <Row k="Precisión brújula" v={accuracyText} />
+                  <Row k="Precisión brújula" v={accuracyText} onLongPress={toggleDiag} />
+                  {diag ? <Txt variant="caption" color="target">{diag}</Txt> : null}
+                  {diag && dbg ? <Txt variant="caption" color="target" tabular>{`cal ${dbg.calibrated ? 'sí' : 'no'} · cobertura ${dbg.coverage}/26 · rms ${dbg.rms === undefined ? '—' : formatFixed(dbg.rms, 1)} µT · campo ${formatFixed(dbg.dev * 100, 0, true)} % · inclinación ${formatFixed(dbg.dipError, 0, true)}°`}</Txt> : null}
                   <Row k="Precisión GPS" v={loc ? `±${formatFixed(loc.horizontalAccuracy, 0)} m` : '—'} />
                 </View>
               </>
@@ -133,7 +155,7 @@ function AimContent({ onClose }: { onClose: () => void }) {
 
             {info ? (
               <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
-                <BorderedButton title="Calibrar boom" size="small" disabled={rawHeading === undefined} onPress={() => setConfirm(true)} />
+                <BorderedButton title="Calibrar boom" size="small" disabled={!hasRawHeading} onPress={() => setConfirm(true)} />
                 {offset !== 0 ? <BorderedButton title={`Restablecer (${formatFixed(offset, 1, true)}°)`} size="small" onPress={() => { location.headingOffset = 0; }} /> : null}
               </View>
             ) : null}
