@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.meshheading'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.meshheading"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}
+
+dependencies {
+  // Fused Orientation Provider (≥ 21.2) y ubicación fusionada para saber si el sistema tiene fix (PM-05)
+  implementation "com.google.android.gms:play-services-location:21.4.0"
+}
