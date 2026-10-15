@@ -69,6 +69,22 @@ function AimContent({ onClose }: { onClose: () => void }) {
   const [diag, setDiag] = useState<string | undefined>();
   const dbg = useStore(headingDebug, (d) => d.last);
   const diagRun = useRef(0);
+  // Recalibración de la brújula: en curso hasta que hay calibración aceptada y precisión ≤ 15°.
+  const [recal, setRecal] = useState(false);
+  const recalReady = recal && dbg?.calibrated === true && accuracy >= 0 && accuracy <= 15;
+  useEffect(() => {
+    if (recalReady) setRecal(false);
+  }, [recalReady]);
+  const [recalDone, setRecalDone] = useState<number | undefined>();
+  useEffect(() => {
+    if (recalReady) setRecalDone(accuracy);
+  }, [recalReady, accuracy]);
+  const startRecal = () => {
+    headingDebug.setState({ last: undefined });
+    location.resetCalibration();
+    setRecalDone(undefined);
+    setRecal(true);
+  };
   const toggleDiag = () => {
     if (diag?.startsWith('Grabando')) return;
     const label = ['reposo', 'giro', 'metal', 'extra'][diagRun.current++ % 4] as string;
@@ -156,8 +172,21 @@ function AimContent({ onClose }: { onClose: () => void }) {
             {info ? (
               <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
                 <BorderedButton title="Calibrar boom" size="small" disabled={!hasRawHeading} onPress={() => setConfirm(true)} />
-                <BorderedButton title="Recalibrar brújula" size="small" onPress={() => location.resetCalibration()} />
+                <BorderedButton title={recal ? 'Recalibrando…' : 'Recalibrar brújula'} size="small" disabled={recal} onPress={startRecal} />
                 {offset !== 0 ? <BorderedButton title={`Restablecer (${formatFixed(offset, 1, true)}°)`} size="small" onPress={() => { location.headingOffset = 0; }} /> : null}
+              </View>
+            ) : null}
+            {recal ? (
+              <View style={{ alignItems: 'center', paddingHorizontal: 16, gap: 4 }}>
+                <Label icon="exclamationmark.triangle" variant="footnote" color="target">
+                  {dbg?.calibrated
+                    ? `Calibración aceptada (±${formatFixed(accuracy, 0)}°). Sigue moviendo e inclinando el teléfono hasta bajar de ±15°.`
+                    : `Recalibrando: mueve el teléfono en ocho, inclinándolo del todo. Orientaciones ${dbg?.coverage ?? 0}/12`}
+                </Label>
+              </View>
+            ) : recalDone !== undefined ? (
+              <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
+                <Label icon="checkmark.circle.fill" variant="footnote" color="green">{`Brújula calibrada: precisión ±${formatFixed(recalDone, 0)}°`}</Label>
               </View>
             ) : null}
             <ConfirmationDialog
