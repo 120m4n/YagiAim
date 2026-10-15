@@ -1,0 +1,407 @@
+file	line	literal
+MeshAzimuth/AboutView.swift	9	pinger.simulated
+MeshAzimuth/AboutView.swift	12	CFBundleDisplayName
+MeshAzimuth/AboutView.swift	12	MeshAzimuth
+MeshAzimuth/AboutView.swift	15	CFBundleShortVersionString
+MeshAzimuth/AboutView.swift	16	CFBundleVersion
+MeshAzimuth/AboutView.swift	17	\(v) (\(b))
+MeshAzimuth/AboutView.swift	25	scope
+MeshAzimuth/AboutView.swift	29	Apunta tu Yagi al repetidor MeshCore
+MeshAzimuth/AboutView.swift	36	Aplicación
+MeshAzimuth/AboutView.swift	37	Versión
+MeshAzimuth/AboutView.swift	38	Ver guía de uso
+MeshAzimuth/AboutView.swift	38	questionmark.circle
+MeshAzimuth/AboutView.swift	42	Caché de mapas
+MeshAzimuth/AboutView.swift	44	Borrar caché de mapas
+MeshAzimuth/AboutView.swift	45	Almacenamiento
+MeshAzimuth/AboutView.swift	46	Guarda solo las teselas que has visto (máx. 500 MB). Para usar una zona sin red, recórrela antes con conexión.
+MeshAzimuth/AboutView.swift	50	Pinger simulado
+MeshAzimuth/AboutView.swift	51	Depuración
+MeshAzimuth/AboutView.swift	52	Sustituye al pinger BLE por uno simulado que genera mediciones según tu rumbo y el azimut. Sirve para probar la pantalla sin hardware.
+MeshAzimuth/AboutView.swift	55	Desarrollador
+MeshAzimuth/AboutView.swift	56	Indicativo
+MeshAzimuth/AboutView.swift	56	HJ7RMN
+MeshAzimuth/AboutView.swift	57	https://github.com/120m4n
+MeshAzimuth/AboutView.swift	58	github.com/120m4n
+MeshAzimuth/AboutView.swift	58	chevron.left.forwardslash.chevron.right
+MeshAzimuth/AboutView.swift	63	https://meshcore-bga.sidis-ingenieria.com
+MeshAzimuth/AboutView.swift	65	MeshCore Santander
+MeshAzimuth/AboutView.swift	65	map
+MeshAzimuth/AboutView.swift	66	Mapa de cobertura MeshCore: reportes de conectividad y simulación de línea de vista (LOS) 360°.
+MeshAzimuth/AboutView.swift	70	Proyectos relacionados
+MeshAzimuth/AboutView.swift	72	Acerca de
+MeshAzimuth/AboutView.swift	74	Listo
+MeshAzimuth/AboutView.swift	76	¿Borrar la caché de mapas?
+MeshAzimuth/AboutView.swift	77	Borrar
+MeshAzimuth/AimInfo.swift	25	%.2f km
+MeshAzimuth/AimInfo.swift	25	%.0f m
+MeshAzimuth/AimView.swift	12	tolerance
+MeshAzimuth/AimView.swift	30	Azimut verdadero
+MeshAzimuth/AimView.swift	30	%.1f° %@
+MeshAzimuth/AimView.swift	31	Rumbo teléfono
+MeshAzimuth/AimView.swift	31	%.1f°
+MeshAzimuth/AimView.swift	32	Distancia
+MeshAzimuth/AimView.swift	33	Elevación objetivo
+MeshAzimuth/AimView.swift	33	%+.1f°
+MeshAzimuth/AimView.swift	35	Inclinación boom
+MeshAzimuth/AimView.swift	35	%+.1f°
+MeshAzimuth/AimView.swift	37	Ajuste vertical
+MeshAzimuth/AimView.swift	37	%@ %.1f°
+MeshAzimuth/AimView.swift	37	Sube
+MeshAzimuth/AimView.swift	37	Baja
+MeshAzimuth/AimView.swift	40	Precisión brújula
+MeshAzimuth/AimView.swift	41	Precisión GPS
+MeshAzimuth/AimView.swift	41	±%.0f m
+MeshAzimuth/AimView.swift	46	Obteniendo ubicación…
+MeshAzimuth/AimView.swift	50	Usando norte magnético (sin GPS). Declinación no corregida.
+MeshAzimuth/AimView.swift	50	exclamationmark.triangle
+MeshAzimuth/AimView.swift	55	Tolerancia de alineación: ±\(Int(tolerance))°
+MeshAzimuth/AimView.swift	63	Calibrar boom
+MeshAzimuth/AimView.swift	66	Restablecer (\(String(format: 
+MeshAzimuth/AimView.swift	66	, loc.headingOffset))°)
+MeshAzimuth/AimView.swift	72	¿La Yagi está apuntando exactamente al repetidor?
+MeshAzimuth/AimView.swift	74	Sí, calibrar
+MeshAzimuth/AimView.swift	76	Se corregirá la diferencia entre el teléfono y el boom usando este azimut como referencia.
+MeshAzimuth/AimView.swift	82	Sostén el teléfono plano sobre el boom, con la parte superior hacia el director. Aléjate de metal y del cable coaxial.
+MeshAzimuth/AimView.swift	90	Apuntar
+MeshAzimuth/AimView.swift	93	Listo
+MeshAzimuth/AimView.swift	102	sin calibrar
+MeshAzimuth/AimView.swift	102	±%.0f°
+MeshAzimuth/AimView.swift	108	Alineado
+MeshAzimuth/AimView.swift	108	checkmark.circle.fill
+MeshAzimuth/AimView.swift	111	Gira %.0f°
+MeshAzimuth/AimView.swift	112	arrow.clockwise
+MeshAzimuth/AimView.swift	112	arrow.counterclockwise
+MeshAzimuth/AimView.swift	118	Brújula no disponible
+MeshAzimuth/CompassView.swift	8	alineado
+MeshAzimuth/CompassView.swift	77	N
+MeshAzimuth/CompassView.swift	77	E
+MeshAzimuth/CompassView.swift	77	S
+MeshAzimuth/CompassView.swift	77	O
+MeshAzimuth/CompassView.swift	80	N
+MeshAzimuth/CompassView.swift	85	\(d)
+MeshAzimuth/CompassView.swift	95	Sin datos de brújula
+MeshAzimuth/CompassView.swift	96	Alineado con el repetidor, azimut \(Int(target)) grados
+MeshAzimuth/CompassView.swift	97	Gira %.0f grados a la %@
+MeshAzimuth/CompassView.swift	97	derecha
+MeshAzimuth/CompassView.swift	97	izquierda
+MeshAzimuth/ContentView.swift	15	onboarding.done
+MeshAzimuth/ContentView.swift	16	map.satellite
+MeshAzimuth/ContentView.swift	18	map.camera
+MeshAzimuth/ContentView.swift	51	© OpenStreetMap contributors
+MeshAzimuth/ContentView.swift	63	Sin conexión: el mapa puede no cargar
+MeshAzimuth/ContentView.swift	63	wifi.slash
+MeshAzimuth/ContentView.swift	71	MeshAzimuth
+MeshAzimuth/ContentView.swift	79	map
+MeshAzimuth/ContentView.swift	79	globe.americas
+MeshAzimuth/ContentView.swift	83	info.circle
+MeshAzimuth/ContentView.swift	84	list.bullet
+MeshAzimuth/ContentView.swift	92	Repetidor \(store.repeaters.count + 1)
+MeshAzimuth/ContentView.swift	117	Azimut %.1f° %@
+MeshAzimuth/ContentView.swift	119	 · ubicación anterior
+MeshAzimuth/ContentView.swift	122	Esperando GPS…
+MeshAzimuth/ContentView.swift	126	chevron.right
+MeshAzimuth/ContentView.swift	136	Toca el mapa donde está el repetidor MeshCore
+MeshAzimuth/ContentView.swift	149	\(coordinate.latitude),\(coordinate.longitude)
+MeshAzimuth/Geo.swift	75	N
+MeshAzimuth/Geo.swift	75	NNE
+MeshAzimuth/Geo.swift	75	NE
+MeshAzimuth/Geo.swift	75	ENE
+MeshAzimuth/Geo.swift	75	E
+MeshAzimuth/Geo.swift	75	ESE
+MeshAzimuth/Geo.swift	75	SE
+MeshAzimuth/Geo.swift	75	SSE
+MeshAzimuth/Geo.swift	76	S
+MeshAzimuth/Geo.swift	76	SSO
+MeshAzimuth/Geo.swift	76	SO
+MeshAzimuth/Geo.swift	76	OSO
+MeshAzimuth/Geo.swift	76	O
+MeshAzimuth/Geo.swift	76	ONO
+MeshAzimuth/Geo.swift	76	NO
+MeshAzimuth/Geo.swift	76	NNO
+MeshAzimuth/Link/BLELineTransport.swift	9	6E400001-B5A3-F393-E0A9-E50E24DCCA9E
+MeshAzimuth/Link/BLELineTransport.swift	10	6E400002-B5A3-F393-E0A9-E50E24DCCA9E
+MeshAzimuth/Link/BLELineTransport.swift	11	6E400003-B5A3-F393-E0A9-E50E24DCCA9E
+MeshAzimuth/Link/BLELineTransport.swift	12	YagiPinger-
+MeshAzimuth/Link/BLELineTransport.swift	13	pinger.lastDevice
+MeshAzimuth/Link/BLELineTransport.swift	33	co.electrosoftware.meshazimuth.ble
+MeshAzimuth/Link/BLELineTransport.swift	120	\n
+MeshAzimuth/Link/LineCodec.swift	41	#OK 
+MeshAzimuth/Link/LineCodec.swift	41	go
+MeshAzimuth/Link/LineCodec.swift	41	hash=A1
+MeshAzimuth/Link/LineCodec.swift	53	\r\n
+MeshAzimuth/Link/LineCodec.swift	55	P,
+MeshAzimuth/Link/LineCodec.swift	56	S,
+MeshAzimuth/Link/LineCodec.swift	57	R,
+MeshAzimuth/Link/LineCodec.swift	58	#HELLO 
+MeshAzimuth/Link/LineCodec.swift	59	#CFG 
+MeshAzimuth/Link/LineCodec.swift	60	#OK 
+MeshAzimuth/Link/LineCodec.swift	61	#WARN 
+MeshAzimuth/Link/LineCodec.swift	62	!ERR 
+MeshAzimuth/Link/LineCodec.swift	114	fw
+MeshAzimuth/Link/LineCodec.swift	114	proto
+MeshAzimuth/Link/LineCodec.swift	115	radio
+MeshAzimuth/Link/LineCodec.swift	115	id
+MeshAzimuth/Link/LineTransport.swift	31	Bluetooth apagado. Actívalo en Ajustes.
+MeshAzimuth/Link/LineTransport.swift	32	MeshAzimuth no tiene permiso de Bluetooth. Actívalo en Ajustes.
+MeshAzimuth/Link/LineTransport.swift	33	No se encontró el pinger.
+MeshAzimuth/Link/LineTransport.swift	34	Conexión con el pinger perdida.
+MeshAzimuth/Link/LineTransport.swift	35	Firmware incompatible (proto=\(proto))
+MeshAzimuth/Link/LineTransport.swift	36	El pinger no responde.
+MeshAzimuth/Link/LineTransport.swift	37	No se pudo enviar el comando al pinger.
+MeshAzimuth/Link/LineTransport.swift	48	YagiPinger-1A2B
+MeshAzimuth/Link/PingerLink.swift	106	range
+MeshAzimuth/Link/PingerLink.swift	106	hash 00-FF
+MeshAzimuth/Link/PingerLink.swift	107	SET hash=\(h)
+MeshAzimuth/Link/PingerLink.swift	107	hash=
+MeshAzimuth/Link/PingerLink.swift	112	HELLO
+MeshAzimuth/Link/PingerLink.swift	117	STOP
+MeshAzimuth/Link/PingerLink.swift	117	stop
+MeshAzimuth/Link/PingerLink.swift	118	MON off
+MeshAzimuth/Link/PingerLink.swift	118	mon=off
+MeshAzimuth/Link/PingerLink.swift	119	CFG?
+MeshAzimuth/Link/PingerLink.swift	141	PING
+MeshAzimuth/Link/PingerLink.swift	169	rate
+MeshAzimuth/Link/PingerLink.swift	235	\(code) \($0)
+MeshAzimuth/Link/PingerLink.swift	236	duty_wait
+MeshAzimuth/Link/SimulatedPinger.swift	97	HELLO
+MeshAzimuth/Link/SimulatedPinger.swift	97	#HELLO fw=sim proto=1 radio=SX1262 id=51AA01
+MeshAzimuth/Link/SimulatedPinger.swift	98	CFG?
+MeshAzimuth/Link/SimulatedPinger.swift	98	#CFG freq=915.800 bw=250 sf=10 cr=5 txp=22 hash=\(hash ?? 
+MeshAzimuth/Link/SimulatedPinger.swift	98	) rate=\(rateMs) timeout=auto raw=0
+MeshAzimuth/Link/SimulatedPinger.swift	99	STOP
+MeshAzimuth/Link/SimulatedPinger.swift	99	#OK stop
+MeshAzimuth/Link/SimulatedPinger.swift	100	MON
+MeshAzimuth/Link/SimulatedPinger.swift	100	#OK mon=\(arg.lowercased())
+MeshAzimuth/Link/SimulatedPinger.swift	101	SET
+MeshAzimuth/Link/SimulatedPinger.swift	102	PING
+MeshAzimuth/Link/SimulatedPinger.swift	103	!ERR unknown
+MeshAzimuth/Link/SimulatedPinger.swift	109	!ERR syntax
+MeshAzimuth/Link/SimulatedPinger.swift	111	hash
+MeshAzimuth/Link/SimulatedPinger.swift	112	!ERR range hash 00-FF
+MeshAzimuth/Link/SimulatedPinger.swift	114	#OK hash=\(kv[1])
+MeshAzimuth/Link/SimulatedPinger.swift	115	rate
+MeshAzimuth/Link/SimulatedPinger.swift	116	!ERR range rate>=1000
+MeshAzimuth/Link/SimulatedPinger.swift	118	#OK rate=\(r)
+MeshAzimuth/Link/SimulatedPinger.swift	119	freq
+MeshAzimuth/Link/SimulatedPinger.swift	119	bw
+MeshAzimuth/Link/SimulatedPinger.swift	119	sf
+MeshAzimuth/Link/SimulatedPinger.swift	119	cr
+MeshAzimuth/Link/SimulatedPinger.swift	119	txp
+MeshAzimuth/Link/SimulatedPinger.swift	119	timeout
+MeshAzimuth/Link/SimulatedPinger.swift	119	raw
+MeshAzimuth/Link/SimulatedPinger.swift	120	#OK \(kv[0])=\(kv[1])
+MeshAzimuth/Link/SimulatedPinger.swift	122	!ERR unknown \(kv[0])
+MeshAzimuth/Link/SimulatedPinger.swift	127	!ERR state nohash
+MeshAzimuth/Link/SimulatedPinger.swift	128	!ERR state busy
+MeshAzimuth/Link/SimulatedPinger.swift	144	#WARN duty_wait \(Int(wait / config.delayScale))
+MeshAzimuth/Link/SimulatedPinger.swift	158	%08X
+MeshAzimuth/Link/SimulatedPinger.swift	160	P,\(seq),\(tag),timeout,,,,,0
+MeshAzimuth/Link/SimulatedPinger.swift	167	P,\(seq),\(tag),ok,\(rtt),\(String(format: 
+MeshAzimuth/Link/SimulatedPinger.swift	167	, up, dn, rssi)),1
+MeshAzimuth/LinkCard.swift	16	En vivo
+MeshAzimuth/LinkCard.swift	17	1 ping cada 2 s
+MeshAzimuth/LinkCard.swift	20	exclamationmark.triangle
+MeshAzimuth/LinkCard.swift	34	Conectado · \(link.hash ?? 
+MeshAzimuth/LinkCard.swift	34	checkmark.circle.fill
+MeshAzimuth/LinkCard.swift	36	 · fw \($0)
+MeshAzimuth/LinkCard.swift	37	Desconectar
+MeshAzimuth/LinkCard.swift	39	exclamationmark.triangle.fill
+MeshAzimuth/LinkCard.swift	41	Reintentar
+MeshAzimuth/LinkCard.swift	43	Abrir Ajustes
+MeshAzimuth/LinkCard.swift	49	Conectando al pinger…
+MeshAzimuth/LinkCard.swift	51	Conectar pinger
+MeshAzimuth/LinkCard.swift	51	antenna.radiowaves.left.and.right
+MeshAzimuth/LinkCard.swift	60	SNR ↑
+MeshAzimuth/LinkCard.swift	60	%+.2f dB
+MeshAzimuth/LinkCard.swift	61	SNR ↓
+MeshAzimuth/LinkCard.swift	61	%+.2f dB
+MeshAzimuth/LinkCard.swift	64	RSSI ↓
+MeshAzimuth/LinkCard.swift	64	%.1f dBm
+MeshAzimuth/LinkCard.swift	65	RTT
+MeshAzimuth/LinkCard.swift	65	\($0) ms
+MeshAzimuth/LinkCard.swift	68	Pérdida
+MeshAzimuth/LinkCard.swift	85	n
+MeshAzimuth/LinkCard.swift	85	SNR ↑
+MeshAzimuth/LinkCard.swift	97	\(Int((100.0 * Double(lost) / Double(answered.count)).rounded())) %
+MeshAzimuth/LinkCard.swift	103	sin respuesta
+MeshAzimuth/LinkCard.swift	104	canal ocupado
+MeshAzimuth/LinkCard.swift	105	error de TX
+MeshAzimuth/LinkCard.swift	112	duty_wait
+MeshAzimuth/LinkCard.swift	112	El pinger retrasó un envío por su límite de TX
+MeshAzimuth/LinkCard.swift	113	hash_collision
+MeshAzimuth/LinkCard.swift	113	Dos repetidores responden con el mismo hash
+MeshAzimuth/LocationManager.swift	17	boom.offset
+MeshAzimuth/LocationManager.swift	18	boom.offset
+MeshAzimuth/LocationManager.swift	29	location.last
+MeshAzimuth/LocationManager.swift	46	lat
+MeshAzimuth/LocationManager.swift	46	lon
+MeshAzimuth/LocationManager.swift	46	alt
+MeshAzimuth/LocationManager.swift	47	h
+MeshAzimuth/LocationManager.swift	47	v
+MeshAzimuth/LocationManager.swift	47	t
+MeshAzimuth/LocationManager.swift	60	lat
+MeshAzimuth/LocationManager.swift	60	lon
+MeshAzimuth/LocationManager.swift	60	alt
+MeshAzimuth/LocationManager.swift	61	h
+MeshAzimuth/LocationManager.swift	61	v
+MeshAzimuth/LocationManager.swift	61	t
+MeshAzimuth/LocationManager.swift	145	CLLocationManager error: \(error.localizedDescription)
+MeshAzimuth/MapView.swift	13	User-Agent
+MeshAzimuth/MapView.swift	13	MeshAzimuth/1.0 (co.electrosoftware.meshazimuth)
+MeshAzimuth/MapView.swift	18	https://tile.openstreetmap.org/{z}/{x}/{y}.png
+MeshAzimuth/MapView.swift	110	\($0.id)\($0.name)\($0.latitude)\($0.longitude)
+MeshAzimuth/MapView.swift	110	\(String(describing: selectedID))
+MeshAzimuth/MapView.swift	126	casing
+MeshAzimuth/MapView.swift	160	casing
+MeshAzimuth/MapView.swift	175	repeater
+MeshAzimuth/MapView.swift	176	antenna.radiowaves.left.and.right
+MeshAzimuth/MeshAzimuthApp.swift	15	pinger.simulated
+MeshAzimuth/OnboardingView.swift	9	mappin.and.ellipse
+MeshAzimuth/OnboardingView.swift	9	Marca el repetidor
+MeshAzimuth/OnboardingView.swift	10	Toca el mapa donde está el repetidor MeshCore. Puedes guardar varios, con nombre y altitud opcional para calcular la elevación.
+MeshAzimuth/OnboardingView.swift	11	iphone.gen3
+MeshAzimuth/OnboardingView.swift	11	Coloca el teléfono
+MeshAzimuth/OnboardingView.swift	12	Ponlo plano sobre el boom, con el borde superior hacia el director. Aléjalo de mástiles, coaxial y del imán del rotor. Si la precisión de la brújula pasa de ±15°, muévelo en forma de ocho.
+MeshAzimuth/OnboardingView.swift	13	scope
+MeshAzimuth/OnboardingView.swift	13	Gira hasta el verde
+MeshAzimuth/OnboardingView.swift	14	La aguja naranja apunta al repetidor. Al alinearte se pone verde y vibra 3 segundos. Para el ajuste fino, conecta el pinger LoRa y mira el SNR en vivo.
+MeshAzimuth/OnboardingView.swift	36	Empezar
+MeshAzimuth/OnboardingView.swift	36	Siguiente
+MeshAzimuth/PermissionBanner.swift	10	Sin permiso de ubicación
+MeshAzimuth/PermissionBanner.swift	10	location.slash
+MeshAzimuth/PermissionBanner.swift	12	Sin GPS no se puede calcular el azimut al repetidor.
+MeshAzimuth/PermissionBanner.swift	14	Abrir Ajustes
+MeshAzimuth/PingerPicker.swift	38	pinger.simulated
+MeshAzimuth/PingerPicker.swift	46	Pinger simulado
+MeshAzimuth/PingerPicker.swift	46	wand.and.stars
+MeshAzimuth/PingerPicker.swift	47	Modo de depuración: genera mediciones sin hardware, según el rumbo y el azimut reales.
+MeshAzimuth/PingerPicker.swift	52	exclamationmark.triangle
+MeshAzimuth/PingerPicker.swift	54	Abrir Ajustes
+MeshAzimuth/PingerPicker.swift	64	antenna.radiowaves.left.and.right
+MeshAzimuth/PingerPicker.swift	66	último usado
+MeshAzimuth/PingerPicker.swift	72	No se encontró ningún pinger. Comprueba que esté encendido y a menos de 2 m.
+MeshAzimuth/PingerPicker.swift	74	Buscar de nuevo
+MeshAzimuth/PingerPicker.swift	76	Buscando pingers cercanos…
+MeshAzimuth/PingerPicker.swift	79	Pingers cercanos
+MeshAzimuth/PingerPicker.swift	82	Conectar pinger
+MeshAzimuth/PingerPicker.swift	84	Cancelar
+MeshAzimuth/PingerSection.swift	21	Añade el prefijo hash de «\(repeater.name)» (editar repetidor) para medir el enlace.
+MeshAzimuth/PingerSection.swift	21	info.circle
+MeshAzimuth/PingerSection.swift	50	Midiendo \(recorder.done)/\(recorder.total)…
+MeshAzimuth/PingerSection.swift	50	waveform
+MeshAzimuth/PingerSection.swift	52	Medir aquí
+MeshAzimuth/PingerSection.swift	52	scope
+MeshAzimuth/PingerSection.swift	59	Calibra la brújula antes de medir (precisión \(loc.headingAccuracy < 0 ? 
+MeshAzimuth/PingerSection.swift	59	 : String(format: 
+MeshAzimuth/PingerSection.swift	59	, loc.headingAccuracy))).
+MeshAzimuth/PingerSection.swift	60	location.north.line
+MeshAzimuth/PingerSection.swift	68	Sesión · \(recorder.current?.readings.count ?? 0) lecturas
+MeshAzimuth/PingerSection.swift	68	list.bullet.rectangle
+MeshAzimuth/PingerSection.swift	77	Lectura \(r.index)
+MeshAzimuth/PingerSection.swift	78	Δ %+.1f°
+MeshAzimuth/PingerSection.swift	79	SNR↑ %+.2f dB
+MeshAzimuth/PingerSection.swift	80	pérdida \($0) %
+MeshAzimuth/PingerSection.swift	83	Repetir: solo \(r.stableCount) muestras estables (mantén el teléfono quieto)
+MeshAzimuth/PingerSection.swift	83	arrow.counterclockwise
+MeshAzimuth/PingerSection.swift	98	El pinger no está conectado.
+MeshAzimuth/PingerSection.swift	99	Falta el prefijo hash del repetidor.
+MeshAzimuth/PingerSection.swift	100	Calibra la brújula y vuelve a intentar.
+MeshAzimuth/PingerSection.swift	101	Aún no hay ubicación GPS.
+MeshAzimuth/PingerSection.swift	105	No se pudo medir: \(error.localizedDescription)
+MeshAzimuth/RepeaterStore.swift	30	repeaters.v1
+MeshAzimuth/RepeaterStore.swift	31	repeaters.selected
+MeshAzimuth/RepeaterViews.swift	12	list.sortByDistance
+MeshAzimuth/RepeaterViews.swift	29	%.6f, %.6f
+MeshAzimuth/RepeaterViews.swift	33	%.1f km
+MeshAzimuth/RepeaterViews.swift	33	%.0f m
+MeshAzimuth/RepeaterViews.swift	34	%@ · az %.1f° %@
+MeshAzimuth/RepeaterViews.swift	53	checkmark
+MeshAzimuth/RepeaterViews.swift	59	Borrar
+MeshAzimuth/RepeaterViews.swift	59	trash
+MeshAzimuth/RepeaterViews.swift	62	Editar
+MeshAzimuth/RepeaterViews.swift	62	pencil
+MeshAzimuth/RepeaterViews.swift	66	Buscar repetidor
+MeshAzimuth/RepeaterViews.swift	69	Sin repetidores
+MeshAzimuth/RepeaterViews.swift	69	antenna.radiowaves.left.and.right
+MeshAzimuth/RepeaterViews.swift	70	Toca el mapa para agregar uno o importa un archivo.
+MeshAzimuth/RepeaterViews.swift	73	Repetidores
+MeshAzimuth/RepeaterViews.swift	75	Cerrar
+MeshAzimuth/RepeaterViews.swift	77	Nuevo
+MeshAzimuth/RepeaterViews.swift	78	plus
+MeshAzimuth/RepeaterViews.swift	81	Orden
+MeshAzimuth/RepeaterViews.swift	82	Por cercanía
+MeshAzimuth/RepeaterViews.swift	82	location
+MeshAzimuth/RepeaterViews.swift	83	Por nombre
+MeshAzimuth/RepeaterViews.swift	83	textformat
+MeshAzimuth/RepeaterViews.swift	86	Importar JSON…
+MeshAzimuth/RepeaterViews.swift	86	square.and.arrow.down
+MeshAzimuth/RepeaterViews.swift	88	Exportar JSON
+MeshAzimuth/RepeaterViews.swift	88	square.and.arrow.up
+MeshAzimuth/RepeaterViews.swift	90	ellipsis.circle
+MeshAzimuth/RepeaterViews.swift	99	Importación
+MeshAzimuth/RepeaterViews.swift	100	OK
+MeshAzimuth/RepeaterViews.swift	109	MeshAzimuth-repetidores.json
+MeshAzimuth/RepeaterViews.swift	114	No se pudo abrir el archivo.
+MeshAzimuth/RepeaterViews.swift	119	El archivo no tiene el formato esperado (lista JSON de repetidores).
+MeshAzimuth/RepeaterViews.swift	122	Importados \(r.added). Omitidos \(r.skipped) (duplicados o inválidos).
+MeshAzimuth/RepeaterViews.swift	145	Nombre
+MeshAzimuth/RepeaterViews.swift	145	Nombre
+MeshAzimuth/RepeaterViews.swift	146	Coordenadas (WGS84)
+MeshAzimuth/RepeaterViews.swift	147	Latitud
+MeshAzimuth/RepeaterViews.swift	148	Longitud
+MeshAzimuth/RepeaterViews.swift	151	Altitud antena (m s.n.m.)
+MeshAzimuth/RepeaterViews.swift	153	Opcional
+MeshAzimuth/RepeaterViews.swift	154	Si la indicas, se calcula el ángulo de elevación con corrección de curvatura (k = 4/3).
+MeshAzimuth/RepeaterViews.swift	157	Prefijo hash (2 hex)
+MeshAzimuth/RepeaterViews.swift	160	Deben ser exactamente 2 dígitos hexadecimales (0-9, A-F).
+MeshAzimuth/RepeaterViews.swift	161	Pinger LoRa (opcional)
+MeshAzimuth/RepeaterViews.swift	162	Primer byte de la clave pública del repetidor (los dos primeros dígitos en la app MeshCore). El pinger lo usa para medir el enlace.
+MeshAzimuth/RepeaterViews.swift	165	Nuevo repetidor
+MeshAzimuth/RepeaterViews.swift	165	Editar
+MeshAzimuth/RepeaterViews.swift	168	Cancelar
+MeshAzimuth/RepeaterViews.swift	170	Guardar
+MeshAzimuth/Session/SessionCSV.swift	6	session_id,repeater_name,repeater_hash,repeater_lat,repeater_lon,reading_idx,sample_idx,t_tx_iso,t_rx_iso,lat,lon,alt_m,h_acc_m,target_bearing_deg,heading_tx_deg,heading_rx_deg,heading_acc_deg,delta_deg,unstable,invalid,seq,tag,status,rtt_ms,snr_up_db,snr_dn_db,rssi_dn_dbm,n_resp,txp_dbm,fw,proto
+MeshAzimuth/Session/SessionCSV.swift	29	%+.2f
+MeshAzimuth/Session/SessionCSV.swift	29	%+.2f
+MeshAzimuth/Session/SessionCSV.swift	30	%+.1f
+MeshAzimuth/Session/SessionCSV.swift	35	\r\n
+MeshAzimuth/Session/SessionCSV.swift	35	\r\n
+MeshAzimuth/Session/SessionCSV.swift	41	en_US_POSIX
+MeshAzimuth/Session/SessionCSV.swift	43	yyyyMMdd-HHmmss
+MeshAzimuth/Session/SessionCSV.swift	45	meshazimuth_\(safe)_\(df.string(from: s.started)).csv
+MeshAzimuth/Session/SessionCSV.swift	50	\n
+MeshAzimuth/Session/SessionCSV.swift	50	\r
+MeshAzimuth/Session/SessionCSV.swift	54	%.\(decimals)f
+MeshAzimuth/Session/SessionRecorder.swift	45	txp
+MeshAzimuth/Session/SessionRecorder.swift	48	rate
+MeshAzimuth/Session/SessionStore.swift	8	Sessions
+MeshAzimuth/Session/SessionStore.swift	27	json
+MeshAzimuth/Session/SessionStore.swift	35	\(id.uuidString).json
+MeshAzimuth/SessionView.swift	14	Sesión actual
+MeshAzimuth/SessionView.swift	16	Empezar una sesión nueva
+MeshAzimuth/SessionView.swift	19	Aún no hay lecturas. Toca «Medir aquí» con la antena quieta.
+MeshAzimuth/SessionView.swift	22	Anteriores
+MeshAzimuth/SessionView.swift	29	Listo
+MeshAzimuth/SessionView.swift	37	\(s.readings.count) lecturas · \(s.samples.count) muestras
+MeshAzimuth/SessionView.swift	52	#\(r.index)
+MeshAzimuth/SessionView.swift	58	arrow.counterclockwise
+MeshAzimuth/SessionView.swift	61	Lecturas
+MeshAzimuth/SessionView.swift	62	Δ = rumbo del teléfono respecto al azimut (positivo: falta girar a la derecha). ↺ = repetir: menos de 3 muestras estables.
+MeshAzimuth/SessionView.swift	65	Exportar CSV
+MeshAzimuth/SessionView.swift	65	square.and.arrow.up
+MeshAzimuth/SessionView.swift	74	Δ %+.1f°
+MeshAzimuth/SessionView.swift	74	Δ —
+MeshAzimuth/SessionView.swift	75	SNR↑ %+.2f
+MeshAzimuth/SessionView.swift	75	SNR↑ —
+MeshAzimuth/SessionView.swift	79	SNR↓ %+.2f
+MeshAzimuth/SessionView.swift	79	SNR↓ —
+MeshAzimuth/SessionView.swift	80	pérdida \($0) %
+MeshAzimuth/SessionView.swift	80	pérdida —
+MeshAzimuth/SessionView.swift	81	\(r.stableCount) estables
+MeshAzimuth/TrackingButton.swift	12	location
+MeshAzimuth/TrackingButton.swift	13	location.fill
+MeshAzimuth/TrackingButton.swift	14	location.north.line.fill
+MeshAzimuth/TrackingButton.swift	19	Seguir mi ubicación
+MeshAzimuth/TrackingButton.swift	20	Siguiendo mi ubicación. Tocar para seguir con rumbo
+MeshAzimuth/TrackingButton.swift	21	Siguiendo con rumbo. Tocar para dejar de girar el mapa

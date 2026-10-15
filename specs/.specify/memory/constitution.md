@@ -1,6 +1,11 @@
 <!--
 Sync Impact Report
-- Version: 0.0.0 → 1.0.0 (ratificación inicial)
+- Version: 1.0.0 → 1.1.0 (MINOR: se añade el principio VII y la plataforma Android/React Native)
+- Principios añadidos: VII. Paridad con la referencia iOS
+- Secciones modificadas: Restricciones de hardware y RF (plataformas), Flujo de desarrollo (gates), Governance (Check I–VII)
+- Plantillas: plan-template.md ⚠ el Constitution Check debe cubrir I–VII
+- TODOs diferidos: ninguno nuevo
+- Historial: 0.0.0 → 1.0.0 (ratificación inicial)
 - Principios añadidos: I–VI
 - Secciones añadidas: Restricciones de hardware y RF, Flujo de desarrollo
 - Plantillas: plan-template.md ✅ (Constitution Check referencia I–VI) | spec-template.md ✅ | tasks-template.md ✅
@@ -48,21 +53,29 @@ Sistema para orientar una antena Yagi-Uda hacia un repetidor MeshCore y **valida
 - La única persistencia del firmware es su configuración. La app persiste repetidores y sesiones de medición.
 - Cualquier dependencia nueva se justifica en el `plan.md` de la feature.
 
+### VII. Paridad con la referencia iOS (traspaso directo)
+
+- La app iOS de este repositorio (`MeshAzimuth/`, commit de referencia fijado en `specs/004-react-native-android/plan.md`) es la **especificación ejecutable** de cualquier otra plataforma. Un port NO añade, quita ni reinterpreta funciones, textos, reglas, tiempos ni formatos.
+- Toda divergencia inevitable por plataforma, licencia o hardware DEBE estar registrada en `contracts/platform-mapping.md` del port, con su causa y la decisión aprobada. Una divergencia no registrada es un defecto.
+- Los tests XCTest y los fixtures de líneas se portan 1:1 y deben pasar sin modificar sus expectativas.
+- La aceptación visual se mide contra capturas de referencia del iPhone, con un procedimiento reproducible y umbrales escritos.
+
 ## Restricciones de hardware y RF
 
 - Hardware de referencia: Seeed XIAO nRF52840 + Wio-SX1262 (pines según `variants/xiao_nrf52` de MeshCore).
 - Parámetros de radio idénticos a los de la mesh local: frecuencia, BW, SF, CR, sync word `0x12`, CRC on, header explícito, preámbulo 32 (SF ≤ 8) o 16 (SF ≥ 9).
 - Banda ISM 902–928 MHz. La potencia máxima configurable DEBE respetar la regulación colombiana vigente (a verificar antes de liberar la fase 001).
-- iOS 17+, SwiftUI y CoreBluetooth; la app es YagiAim (`ios/`).
+- iOS 17+, SwiftUI y CoreBluetooth: app de referencia MeshAzimuth (`MeshAzimuth/`).
+- Android (React Native): port de la app de referencia según el principio VII (`specs/004-react-native-android`).
 
 ## Flujo de desarrollo
 
 - Spec Kit: `spec.md → plan.md → tasks.md → implementación`, una carpeta `specs/NNN-*` por fase y una rama `NNN-*` por fase.
-- Gates de PR: `pio test -e native` verde, `xcodebuild test` verde (cuando aplica) y el guardián de deriva verde.
+- Gates de PR: `pio test -e native` verde, `xcodebuild test` verde (cuando aplica), el guardián de deriva verde y, para el port Android, la suite de paridad (Jest) y la suite visual verdes.
 - Idioma: documentación en español; identificadores de código en inglés.
 
 ## Governance
 
-Esta constitución prevalece sobre cualquier otra práctica del repositorio. Las enmiendas requieren PR con el Sync Impact Report actualizado y versionado semántico: MAJOR si se elimina o redefine un principio, MINOR si se añade uno, PATCH si son aclaraciones. Todo `plan.md` DEBE incluir un *Constitution Check* contra I–VI.
+Esta constitución prevalece sobre cualquier otra práctica del repositorio. Las enmiendas requieren PR con el Sync Impact Report actualizado y versionado semántico: MAJOR si se elimina o redefine un principio, MINOR si se añade uno, PATCH si son aclaraciones. Todo `plan.md` DEBE incluir un *Constitution Check* contra I–VII.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-13
+**Version**: 1.1.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-14
