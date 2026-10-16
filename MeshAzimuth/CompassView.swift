@@ -9,10 +9,22 @@ struct CompassView: View {
     var onAlignedChange: (Bool) -> Void = { _ in }
 
     @State private var aligned = false
+    @State private var shownHeading: Double?   // rumbo/delta desenrollados: solo para animar sin saltos en 360°/0°
+    @State private var shownDelta: Double?
 
     private var delta: Double? {
         guard let heading, let target else { return nil }
         return Geo.signedDelta(target: target, current: heading)
+    }
+
+    private func unwrapShown() {
+        shownHeading = Self.unwrapped(heading, previous: shownHeading)
+        shownDelta = Self.unwrapped(delta, previous: shownDelta)
+    }
+
+    private static func unwrapped(_ new: Double?, previous: Double?) -> Double? {
+        guard let new else { return nil }
+        return previous.map { Geo.unwrap(previous: $0, new: new) } ?? new
     }
 
     private func updateAligned() {
@@ -25,21 +37,21 @@ struct CompassView: View {
             let size = min(geo.size.width, geo.size.height)
             ZStack {
                 dial(size: size)
-                    .rotationEffect(.degrees(-(heading ?? 0)))
-                    .animation(.easeOut(duration: 0.15), value: heading)
+                    .rotationEffect(.degrees(-(shownHeading ?? 0)))
+                    .animation(.easeOut(duration: 0.15), value: shownHeading)
 
                 // Haz de la Yagi (±tolerancia) — fijo, apunta al frente del teléfono.
                 BeamWedge(halfAngle: max(tolerance, 1))
                     .fill((aligned ? Color.green : Color.secondary).opacity(0.18))
                     .frame(width: size, height: size)
 
-                if let delta {
+                if let delta = shownDelta {
                     Needle()
                         .fill(aligned ? Color.green : Theme.target)
                         .frame(width: size * 0.07, height: size * 0.42)
                         .offset(y: -size * 0.21)
                         .rotationEffect(.degrees(delta))
-                        .animation(.easeOut(duration: 0.15), value: delta)
+                        .animation(.easeOut(duration: 0.15), value: shownDelta)
                 }
 
                 Triangle()
@@ -53,7 +65,8 @@ struct CompassView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .aspectRatio(1, contentMode: .fit)
-        .onChange(of: delta, initial: true) { updateAligned() }
+        .onChange(of: heading, initial: true) { unwrapShown() }
+        .onChange(of: delta, initial: true) { unwrapShown(); updateAligned() }
         .onChange(of: tolerance) { updateAligned() }
         .onChange(of: aligned) { _, isAligned in
             onAlignedChange(isAligned)
