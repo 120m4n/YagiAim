@@ -57,6 +57,7 @@ export interface PingReport {
 
 const UINT32_MAX = 0xffff_ffffn;
 const UINT8_MAX = 0xffn;
+const INT64_MAX = 0x7fff_ffff_ffff_ffffn; // Swift: Int(exactly:) rechaza lo que no cabe en Int
 const STATUSES: readonly string[] = ['ok', 'timeout', 'busy', 'txerr'];
 
 // ponytail: Swift compara prefijos por grafema (un "," seguido de una marca combinante no coincide); aquí es por unidad
@@ -112,11 +113,11 @@ function summary(body: string): PingerEvent | undefined {
   if (f.length < 6) return undefined;
   const n = uint(f[0]);
   const ok = uint(f[1]);
-  if (n === undefined || ok === undefined) return undefined;
+  if (n === undefined || ok === undefined || n > INT64_MAX || ok > INT64_MAX) return undefined;
   const s: BurstSummary = { n: bigintToNumber(n), ok: bigintToNumber(ok), busy: 0 };
   if (f[2] !== '') {
     const l = uint(f[2]);
-    if (l === undefined) return undefined;
+    if (l === undefined || l > INT64_MAX) return undefined;
     s.lossPct = bigintToNumber(l);
   }
   const optionalNumber = (text: string | undefined): number | null | undefined => {
@@ -133,7 +134,7 @@ function summary(body: string): PingerEvent | undefined {
   if (rssi !== undefined) s.medRssiDn = rssi;
   if (f.length >= 7) {
     const b = uint(f[6]);
-    if (b === undefined) return undefined;
+    if (b === undefined || b > INT64_MAX) return undefined;
     s.busy = bigintToNumber(b);
   }
   return { kind: 'summary', summary: s };

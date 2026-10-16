@@ -23,9 +23,9 @@ export function isoString(d: Date, tz: TimeZoneSpec): string {
 }
 
 /** RFC 4180: un campo con coma, comilla o salto de línea va entre comillas y las comillas se duplican.
- *  Como en Swift se compara por Character: un "\r\n" es UN carácter y no cuenta como "\n" ni como "\r". */
+ *  Se compara por escalar Unicode (no por Character): un "\r\n" contiene "\r" y "\n". */
 export function csvEscape(field: string): string {
-  const needs = splitGraphemes(field).some((g) => g === ',' || g === '"' || g === '\n' || g === '\r');
+  const needs = /[,"\n\r]/.test(field);
   return needs ? `"${field.split('"').join('""')}"` : field;
 }
 

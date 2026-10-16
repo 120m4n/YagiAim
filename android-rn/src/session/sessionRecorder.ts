@@ -63,7 +63,7 @@ export class SessionRecorder {
 
     this.store.setState({ measuring: true, done: 0, total: count });
     const wasLive = link.live;
-    link.stopLive();
+    await link.stopLiveAndWait();
     try {
       if (link.hash !== hash) await link.configure(hash);
 

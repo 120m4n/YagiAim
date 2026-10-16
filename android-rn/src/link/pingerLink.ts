@@ -96,6 +96,7 @@ export class PingerLink {
   private readerTask: TaskToken | undefined;
   private statesTask: TaskToken | undefined;
   private liveTask: TaskToken | undefined;
+  private livePromise: Promise<void> | undefined;
   private reconnectTask: TaskToken | undefined;
   private waiter: Waiter | undefined;
   private wantConnected = false;
@@ -206,12 +207,19 @@ export class PingerLink {
     this.set({ live: true });
     const token = new TaskToken();
     this.liveTask = token;
-    void Promise.resolve().then(() => this.runLive(token));
+    this.livePromise = Promise.resolve().then(() => this.runLive(token));
   }
 
   stopLive(): void {
     this.set({ live: false });
     this.liveTask?.cancel(); this.liveTask = undefined;
+  }
+
+  /** Como `stopLive()`, pero espera a que acabe el ping en vuelo (libera la petición única). */
+  async stopLiveAndWait(): Promise<void> {
+    const p = this.livePromise;
+    this.stopLive();
+    await p;
   }
 
   private async runLive(token: TaskToken): Promise<void> {
