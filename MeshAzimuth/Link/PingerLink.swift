@@ -154,6 +154,13 @@ final class PingerLink {
         liveTask?.cancel(); liveTask = nil
     }
 
+    /// Como `stopLive()`, pero espera a que acabe el ping en vuelo (libera la petición única).
+    func stopLiveAndWait() async {
+        let t = liveTask
+        stopLive()
+        await t?.value
+    }
+
     private func runLive() async {
         while live && !Task.isCancelled {
             let started = ContinuousClock.now

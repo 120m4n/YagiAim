@@ -81,6 +81,7 @@ final class SessionCSVTests: XCTestCase {
 
     func testRFC4180Escaping() {
         XCTAssertEqual(SessionCSV.escape("plano"), "plano")
+        XCTAssertEqual(SessionCSV.escape("a\r\nb"), "\"a\r\nb\"")   // \r\n es un solo Character en Swift
         XCTAssertEqual(SessionCSV.escape("Cerro, Cali"), "\"Cerro, Cali\"")
         XCTAssertEqual(SessionCSV.escape("El \"Pico\""), "\"El \"\"Pico\"\"\"")
         XCTAssertEqual(SessionCSV.escape("a\nb"), "\"a\nb\"")

@@ -37,8 +37,8 @@ final class SessionRecorder {
 
         measuring = true; done = 0; total = count
         let wasLive = link.live
-        link.stopLive()
         defer { measuring = false; if wasLive { link.startLive() } }
+        await link.stopLiveAndWait()
 
         if link.hash != hash { try await link.configure(hash: hash) }
 

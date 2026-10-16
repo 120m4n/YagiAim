@@ -59,6 +59,10 @@ final class LineCodecTests: XCTestCase {
         }
     }
 
+    func testSummaryWithCountsBeyondIntRangeIsRejectedNotTrapped() {
+        XCTAssertEqual(LineCodec.parse("S,9223372036854775808,1,,,,"), .unknown("S,9223372036854775808,1,,,,"))
+    }
+
     func testRawFixturesParseToTheExpectedFrame() throws {
         let fx = try load("events_r.txt")
         XCTAssertGreaterThanOrEqual(fx.count, 5)

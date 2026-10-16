@@ -87,15 +87,15 @@ enum LineCodec {
     private static func summary(_ body: Substring) -> PingerEvent? {
         // n,ok,loss,med_up,med_dn,med_rssi[,busy]  (busy ausente = 0, firmware anterior)
         let f = body.split(separator: ",", omittingEmptySubsequences: false)
-        guard f.count >= 6, let n = uint(f[0]), let ok = uint(f[1]) else { return nil }
+        guard f.count >= 6, let n = uint(f[0]).flatMap({ Int(exactly: $0) }), let ok = uint(f[1]).flatMap({ Int(exactly: $0) }) else { return nil }
         let loss: Int?, up: Double?, dn: Double?, rssi: Double?
-        if f[2].isEmpty { loss = nil } else if let l = uint(f[2]) { loss = Int(l) } else { return nil }
+        if f[2].isEmpty { loss = nil } else if let l = uint(f[2]).flatMap({ Int(exactly: $0) }) { loss = l } else { return nil }
         if f[3].isEmpty { up = nil } else if let v = number(f[3]) { up = v } else { return nil }
         if f[4].isEmpty { dn = nil } else if let v = number(f[4]) { dn = v } else { return nil }
         if f[5].isEmpty { rssi = nil } else if let v = number(f[5]) { rssi = v } else { return nil }
         var busy = 0
-        if f.count >= 7 { guard let b = uint(f[6]) else { return nil }; busy = Int(b) }
-        return .summary(BurstSummary(n: Int(n), ok: Int(ok), lossPct: loss, medSnrUp: up, medSnrDn: dn, medRssiDn: rssi, busy: busy))
+        if f.count >= 7 { guard let b = uint(f[6]).flatMap({ Int(exactly: $0) }) else { return nil }; busy = b }
+        return .summary(BurstSummary(n: n, ok: ok, lossPct: loss, medSnrUp: up, medSnrDn: dn, medRssiDn: rssi, busy: busy))
     }
 
     private static func rawFrame(_ body: Substring) -> PingerEvent? {
