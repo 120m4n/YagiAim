@@ -90,6 +90,8 @@ test('unwrapAngle no brinca al cruzar el norte', () => {
   near(unwrapAngle(359, 1), 361, 1e-9);
   near(unwrapAngle(361, 359), 359, 1e-9);
   near(unwrapAngle(1, 359), -1, 1e-9);
+  near(unwrapAngle(179, -179), 181, 1e-9);
+  near(unwrapAngle(0, 0), 0, 1e-9);
   let a = 350;
   for (const h of [355, 359, 2, 6, 3, 358, 352]) {
     const n = unwrapAngle(a, h);

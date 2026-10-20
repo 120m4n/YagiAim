@@ -164,7 +164,7 @@ En cada pantalla los textos son los de `strings.tsv` para el archivo indicado; a
 
 | Animación | Origen | Especificación |
 |---|---|---|
-| Rotación del dial y de la aguja | `CompassView.swift` L28–29, L41–42 | easeOut de 0.15 s sobre el valor numérico, **incluida la vuelta larga al cruzar el norte** (C-7: se traspasa el comportamiento de iOS) |
+| Rotación del dial y de la aguja | `CompassView.swift` L28–29, L41–42 | easeOut de 0.15 s sobre el valor desenrollado (`Geo.unwrap`): **camino corto al cruzar 360°/0° y ±180°** (C-7, iOS `464ffaf`) |
 | Cambio de página de la guía | `OnboardingView.swift` L37 | `withAnimation` por defecto (spring de SwiftUI) al pulsar "Siguiente"; arrastre libre entre páginas |
 | Borrado de fila | `RepeaterViews.swift` L59 | `withAnimation` por defecto |
 | Transición numérica | `AimView.swift` L115 | `.numericText()` |

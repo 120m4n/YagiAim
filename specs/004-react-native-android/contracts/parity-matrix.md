@@ -59,7 +59,7 @@ Referencia: `120m4n/YagiAim@2eda6d9`. Destino: `android-rn/` (estructura en `pla
 | `RepeaterViews.swift` (`RepeaterList`) | `screens/RepeaterListScreen.tsx` | filas (nombre `.headline`, detalle `.caption` tabular secundario, check target), detalle "306.7 km · az 62.8° ENE" (`%.1f km`/`%.0f m`, `az %.1f°`) o coordenadas `%.6f, %.6f`, búsqueda "Buscar repetidor", vista vacía, "Cerrar", "+", menú (Orden con selección, Importar JSON…, Exportar JSON), alerta "Importación" | PM-16 |
 | `RepeaterViews.swift` (`RepeaterEditor`) | `screens/RepeaterEditorScreen.tsx` | secciones y pies exactos, validación del hash en rojo, parseo con `,`→`.`, `Guardar` deshabilitado según la regla, decide alta o edición contra el store, valores iniciales con `String(Double)` | FS-09, PM-17 |
 | `AimView.swift` | `screens/AimScreen.tsx` | FR-028 | = |
-| `CompassView.swift` | `screens/aim/CompassView.tsx` (Skia) | FR-027, incluida la vuelta larga al cruzar el norte (C-7) | = |
+| `CompassView.swift` | `screens/aim/CompassView.tsx` (Skia) | FR-027, camino corto al cruzar el norte (C-7, `Geo.unwrap` → `unwrapAngle`) | = |
 | `PingerSection.swift` | `screens/aim/PingerSection.tsx` | tarjeta de enlace, aviso de hash faltante, controles de medida solo con enlace operativo, botón con progreso "Midiendo d/t…", aviso de calibración, error en rojo, resumen de la lectura, botón "Sesión · N lecturas", propagación de `SimInputs`, reconfiguración del hash al cambiar | = |
 | `LinkCard.swift` | `screens/aim/LinkCard.tsx` | FR-034; sparkline equivalente a Swift Charts `LineMark` con eje X oculto y eje Y por defecto, alto 56 | PM-25 |
 | `PingerPicker.swift` (vista) | `screens/PingerPickerScreen.tsx` | FR-034 | PM-25 |

@@ -4,9 +4,9 @@
 // Rendimiento (plan D): el rumbo NO entra por props. La brújula se suscribe a la tienda de ubicación y mueve valores
 // compartidos de Reanimated, así que el rumbo (~20 Hz) no repinta ni React ni la pantalla que la contiene; solo cambia de
 // estado React lo raro: alineado/no alineado, hay/no hay rumbo, tamaño.
-// Divergencias respecto a iOS (registradas en bench-log.md): el ángulo se anima en continuo por el camino corto (iOS gira casi
-// una vuelta al pasar de 359° a 1°, C-7), con una interpolación lineal corta que continúa sin reiniciar la curva (iOS: easeOut 0.15 s)
-// y la vibración de «alineado» espera 300 ms de permanencia.
+// El ángulo del dial y el de la aguja se animan en continuo por el camino corto con `unwrapAngle` (= `Geo.unwrap` de iOS, C-7):
+// 359° → 1° y 179° → −179° giran 2°, no casi una vuelta. Divergencias respecto a iOS (registradas en bench-log.md): interpolación
+// lineal corta que continúa sin reiniciar la curva (iOS: easeOut 0.15 s) y la vibración de «alineado» espera 300 ms de permanencia.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Canvas, Group, Path, Skia, Text as SkText, useFont } from '@shopify/react-native-skia';

@@ -140,7 +140,7 @@ Como dueño del producto, quiero una suite automática que compare cada pantalla
 - **Altitud**: iOS reporta altitud sobre el nivel medio del mar; Android, sobre el elipsoide WGS84. Sin convertir, la elevación al repetidor (altitud en "m s.n.m.") tendría un error igual a la ondulación del geoide (decenas de metros en Colombia). Ver `platform-mapping.md` PM-08.
 - **Línea de más de 160 B, UTF-8 partido entre notificaciones, `\r\n`**: igual que `LineAssembler` (tests portados).
 - **MTU**: Android arranca con 23 B (20 útiles). El port negocia MTU para igualar el comportamiento automático de iOS, y la fragmentación por `\n` sigue funcionando con cualquier MTU (PM-12).
-- **Animación de la brújula al cruzar el norte**: SwiftUI anima `rotationEffect` de forma numérica, así que de 359° a 1° da casi una vuelta completa. El port replica ese comportamiento (C-7: traspaso literal del defecto).
+- **Animación de la brújula al cruzar el norte**: iOS desenrolla el rumbo y el delta de la aguja con `Geo.unwrap` (commit `464ffaf`), así que de 359° a 1° y de 179° a −179° gira por el camino corto. El port hace lo mismo con `unwrapAngle` (C-7).
 - **Tamaño de texto del sistema**: la aceptación visual se mide con escala 1.0 (iOS "Large"). Con otras escalas el texto crece como en iOS, sin compromiso de pixel perfect.
 
 ## Requirements *(mandatory)*
@@ -270,7 +270,7 @@ Regla general dada por el dueño: **no se añade nada a la app iOS; si hay diver
 | C-4 | Colores sólidos medidos + borde de brillo; desenfoque solo sobre el mapa |
 | C-5 | Fused Orientation Provider (grados) → vector de rotación 11 (`values[4]`) → vector geomagnético 20 → `getRotationMatrix` (1 + 2), con `values[4]` o desviación circular de 2 s → `-1` solo con magnetómetro no fiable o ausente (corregido el 2026-10-20: sin el tipo 20 un teléfono sin giroscopio quedaba en "sin calibrar") |
 | C-6 | Sin diálogo de calibración del sistema (divergencia aceptada; los textos de la app ya avisan) |
-| C-7 | Se replica la vuelta larga al cruzar el norte (defecto de iOS traspasado tal cual) |
+| C-7 | Camino corto al cruzar 360°/0° y ±180°, igual que iOS desde `464ffaf` (`Geo.unwrap` = `unwrapAngle`); antes se replicaba la vuelta larga |
 | C-8 | Sin cambios en iOS; capturas existentes + línea base Android aprobada |
 | C-9 | `es_CO` |
 | C-10 | Criterio de la primera pregunta (VA-6) |

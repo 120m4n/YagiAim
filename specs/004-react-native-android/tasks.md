@@ -21,7 +21,7 @@ description: "Task list for 004-react-native-android"
 - [x] D004 C-4 materiales → colores sólidos medidos; desenfoque solo sobre el mapa (PM-27)
 - [x] D005 C-5 precisión de la brújula → FOP → tipo 11 → tipo 20 → `getRotationMatrix` → `-1` (PM-05; corregida el 2026-10-20)
 - [x] D006 C-6 calibración del sistema → nada (PM-24)
-- [x] D007 C-7 cruce del norte → se replica la vuelta larga
+- [x] D007 C-7 cruce del norte → camino corto, como iOS desde `464ffaf` (antes: vuelta larga)
 - [x] D008 C-8 referencias → sin cambios en iOS; capturas existentes + línea base Android aprobada (VA-9)
 - [x] D009 C-9 `es_CO`; C-10 criterio "geometría y color estrictos, glifos flexibles" (VA-6)
 - [x] D010 C-11 `minSdk 26`, `targetSdk 35`
@@ -116,7 +116,7 @@ description: "Task list for 004-react-native-android"
 - [x] T082 [US3] `state/locationStore.ts`: proveedor fusionado (PM-04), `location.last` cada 5 s, `isCachedLocation`, EMA de 0.25, `headingOffset`/`calibrate`, `usingMagneticFallback` según PM-05 (1), con tests del suavizado y de la persistencia
 - [x] T083 [US3] `state/motionStore.ts` (EMA 0.3, 10 Hz, `start` sin reentrada, `stop` → undefined)
 - [ ] T084 [US3] R-3 y R-4: mediciones en iOS y Android → `bench-log.md`; ajustar T081
-- [x] T085 [US3] `screens/aim/CompassView.tsx` con Skia (FR-027; animación numérica con la vuelta larga al cruzar el norte, C-7; histéresis; hápticos; accesibilidad)
+- [x] T085 [US3] `screens/aim/CompassView.tsx` con Skia (FR-027; animación continua por el camino corto al cruzar 360°/0° y ±180° con `unwrapAngle`, C-7; histéresis; hápticos; accesibilidad)
 - [x] T086 [US3] `screens/AimScreen.tsx` (FR-028; tabla y formatos; tolerancia; diálogo de calibración; norte magnético; pantalla encendida; desconexión al salir; `stopLive` en segundo plano)
 - [ ] T087 [US3] Campo: SC-004 con iPhone y Android lado a lado → `bench-log.md`
 
