@@ -25,6 +25,8 @@ export interface MapViewProps {
 
 /** Ventana de doble toque de Android: un toque simple solo cuenta si no llega otro (equivale a `tap.require(toFail: doubleTap)`). */
 const DOUBLE_TAP_MS = 300;
+/** Margen en que un toque del mapa se descarta tras un toque en un pin (el del mapa puede llegar antes o después). */
+const PIN_TAP_MS = 500;
 
 /** Marcador tipo globo con el glifo de antena: naranja (`target`) si está seleccionado, azul (`accent`) si no. */
 function Pin({ selected }: { selected: boolean }) {
@@ -42,6 +44,14 @@ function Pin({ selected }: { selected: boolean }) {
 export function RepeaterMap(p: MapViewProps) {
   const tap = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(tap.current), []);
+  // Un toque en un pin también llega al mapa (en cualquier orden): ese toque no es un alta.
+  const pinAt = useRef(0);
+  const onPinPress = (id: string) => {
+    pinAt.current = Date.now();
+    clearTimeout(tap.current);
+    tap.current = undefined;
+    p.onSelect(id);
+  };
   const initial = useMemo(() => (p.initialRegion ? { bounds: regionToBounds(p.initialRegion) } : undefined), []);
 
   const target = p.repeaters.find((r) => r.id === p.selectedID);
@@ -55,6 +65,7 @@ export function RepeaterMap(p: MapViewProps) {
 
   const onPress = (e: NativeSyntheticEvent<PressEvent>) => {
     const [lon, lat] = e.nativeEvent.lngLat;
+    if (Date.now() - pinAt.current < PIN_TAP_MS) return;
     if (tap.current) {
       clearTimeout(tap.current); // segundo toque: es un doble toque (zoom), no un alta
       tap.current = undefined;
@@ -98,7 +109,7 @@ export function RepeaterMap(p: MapViewProps) {
       {p.repeaters.map((r) => {
         const c = repeaterCoordinate(r);
         return (
-          <Marker key={r.id} id={r.id} lngLat={[c.longitude, c.latitude]} anchor="bottom" onPress={() => p.onSelect(r.id)}>
+          <Marker key={r.id} id={r.id} lngLat={[c.longitude, c.latitude]} anchor="bottom" onPress={() => onPinPress(r.id)}>
             <Pin selected={r.id === p.selectedID} />
           </Marker>
         );
