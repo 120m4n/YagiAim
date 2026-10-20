@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { formatFixed } from '../core/formatC';
 import { cardinal, bearing, distance } from '../core/geo';
-import { encodeRepeatersPretty, decodeRepeaters } from '../core/swiftJson';
+import { encodeRepeatersPretty, parseRepeaters } from '../core/swiftJson';
 import { repeaterCoordinate, type Repeater } from '../core/repeater';
 import { localizedCaseInsensitiveCompare, localizedCaseInsensitiveContains } from '../core/textMatch';
 import { randomUuid } from '../core/uuid';
@@ -17,7 +17,7 @@ import { useColors } from '../ui/colors';
 import { Icon } from '../ui/icons/Icon';
 import { ContentUnavailable, GroupedList, Row, SearchBar, Section, SwipeRow } from '../ui/ios/Lists';
 import { NavBar, NavIconGroup, NavTextButton } from '../ui/ios/NavBar';
-import { Alert, Menu, Sheet } from '../ui/ios/Presentation';
+import { Alert, Menu, PromptDialog, Sheet } from '../ui/ios/Presentation';
 import { Txt } from '../ui/ios/Txt';
 import { Theme } from '../ui/theme';
 import { RepeaterEditorScreen } from './RepeaterEditorScreen';
@@ -44,7 +44,10 @@ export function RepeaterListScreen({ visible, onClose }: { visible: boolean; onC
   const [sortByDistance, setSortByDistance] = useState(() => kv.getBool(Keys.listSortByDistance, true));
   const [editing, setEditing] = useState<{ repeater: Repeater; isNew: boolean } | undefined>();
   const [exportUri, setExportUri] = useState<string | undefined>();
-  const [importMessage, setImportMessage] = useState<string | undefined>();
+  const [importResult, setImportResult] = useState<{ title: string; message: string } | undefined>();
+  const [urlPrompt, setUrlPrompt] = useState(false);
+  const [urlText, setUrlText] = useState('');
+  const [downloading, setDownloading] = useState(false);
   const locale = resolveLocaleTag();
 
   const rows = useMemo(() => {
@@ -69,18 +72,53 @@ export function RepeaterListScreen({ visible, onClose }: { visible: boolean; onC
     kv.setBool(Keys.listSortByDistance, v);
   };
 
-  const importFile = async (): Promise<string | undefined> => {
+  /** Valida el texto, fusiona y avisa en un modal: error con su motivo, o resumen de la importación. */
+  const importText = (text: string) => {
+    const parsed = parseRepeaters(text);
+    if ('error' in parsed) {
+      setImportResult({ title: 'Error al importar', message: parsed.error });
+      return;
+    }
+    const r = store.merge(parsed.list);
+    setImportResult({
+      title: r.added > 0 ? 'Importación exitosa' : 'Nada que importar',
+      message: `Importados ${r.added} de ${parsed.list.length}.${r.skipped > 0 ? ` Omitidos ${r.skipped} (duplicados o inválidos).` : ''}`,
+    });
+  };
+
+  const importFile = async () => {
     let text: string | undefined;
     try {
       text = await pickJsonText();
-    } catch {
-      return 'No se pudo abrir el archivo.';
+    } catch (e) {
+      setImportResult({ title: 'Error al importar', message: `No se pudo abrir el archivo (${e instanceof Error ? e.message : 'error desconocido'}).` });
+      return;
     }
-    if (text === undefined) return undefined; // el usuario canceló
-    const list = decodeRepeaters(text);
-    if (!list) return 'El archivo no tiene el formato esperado (lista JSON de repetidores).';
-    const r = store.merge(list);
-    return `Importados ${r.added}. Omitidos ${r.skipped} (duplicados o inválidos).`;
+    if (text !== undefined) importText(text); // undefined: el usuario canceló
+  };
+
+  const importUrl = async () => {
+    const url = urlText.trim();
+    if (downloading) return; // Enter + botón, o doble toque
+    if (!/^https:\/\//i.test(url)) {
+      setUrlPrompt(false);
+      setImportResult({ title: 'Error al importar', message: 'La URL debe empezar con https://' });
+      return;
+    }
+    setDownloading(true); // el diálogo sigue abierto mostrando «Descargando…» hasta tener respuesta
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const res = await fetch(url, { signal: ctl.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      importText(await res.text());
+    } catch (e) {
+      setImportResult({ title: 'Error al importar', message: `No se pudo descargar el archivo (${e instanceof Error && e.name === 'AbortError' ? 'tiempo agotado' : e instanceof Error ? e.message : 'error desconocido'}).` });
+    } finally {
+      clearTimeout(timer);
+      setDownloading(false);
+      setUrlPrompt(false);
+    }
   };
 
   return (
@@ -97,7 +135,8 @@ export function RepeaterListScreen({ visible, onClose }: { visible: boolean; onC
                 items={[
                   { label: 'Por cercanía', icon: 'location', checked: sortByDistance, onPress: () => setSort(true) },
                   { label: 'Por nombre', icon: 'textformat', checked: !sortByDistance, onPress: () => setSort(false) },
-                  { label: 'Importar JSON…', icon: 'square.and.arrow.down', separatorBefore: true, onPress: () => void importFile().then((m) => m && setImportMessage(m)) },
+                  { label: 'Importar JSON…', icon: 'square.and.arrow.down', separatorBefore: true, onPress: () => void importFile() },
+                  { label: 'Importar desde URL…', icon: 'globe.americas', onPress: () => setUrlPrompt(true) },
                   ...(exportUri && repeaters.length > 0 ? [{ label: 'Exportar JSON', icon: 'square.and.arrow.up', onPress: () => void shareFile(exportUri, MIME_JSON) }] : []),
                 ]}
               >
@@ -156,7 +195,18 @@ export function RepeaterListScreen({ visible, onClose }: { visible: boolean; onC
         </View>
       </Sheet>
       {editing ? <RepeaterEditorScreen visible repeater={editing.repeater} isNew={editing.isNew} onClose={() => setEditing(undefined)} /> : null}
-      <Alert visible={importMessage !== undefined} title="Importación" message={importMessage ?? ''} onClose={() => setImportMessage(undefined)} />
+      <PromptDialog
+        visible={urlPrompt}
+        title="Importar desde URL"
+        message="Dirección https de un JSON de repetidores."
+        value={urlText}
+        onChangeText={setUrlText}
+        placeholder="https://…/repetidores.json"
+        actionLabel={downloading ? 'Descargando…' : 'Importar'}
+        onSubmit={() => void importUrl()}
+        onCancel={() => !downloading && setUrlPrompt(false)}
+      />
+      <Alert visible={importResult !== undefined} title={importResult?.title ?? ''} message={importResult?.message ?? ''} onClose={() => setImportResult(undefined)} />
     </>
   );
 }

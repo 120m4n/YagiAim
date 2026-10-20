@@ -209,4 +209,36 @@ function decode<T>(text: string, f: (v: unknown) => T): T | undefined {
 }
 
 export const decodeRepeaters = (text: string): Repeater[] | undefined => decode(text, (v) => arr(v).map(repeaterFrom));
+
+/** Como `decodeRepeaters`, pero con el motivo en español cuando falla (para el aviso de importación). */
+export function parseRepeaters(text: string): { list: Repeater[] } | { error: string } {
+  if (text.trim() === '') return { error: 'El archivo está vacío.' };
+  let v: unknown;
+  try {
+    v = parseLenient(text.replace(/^﻿/, ''));
+  } catch (e) {
+    return { error: `No es un JSON válido (${e instanceof Error ? e.message : 'error de sintaxis'}).` };
+  }
+  if (!Array.isArray(v)) return { error: 'Se esperaba una lista JSON de repetidores ([ … ]).' };
+  const list: Repeater[] = [];
+  for (let i = 0; i < v.length; i++) {
+    try {
+      list.push(repeaterFrom(v[i]));
+    } catch {
+      const o = typeof v[i] === 'object' && v[i] !== null ? (v[i] as Obj) : {};
+      const field = (['id', 'name', 'latitude', 'longitude'] as const).find((k) => {
+        try {
+          if (k === 'id') uuid(o[k]);
+          else if (k === 'name') str(o[k]);
+          else num(o[k]);
+          return false;
+        } catch {
+          return true;
+        }
+      });
+      return { error: `Repetidor #${i + 1}: ${field ? `campo «${field}» ausente o inválido` : 'formato inválido'}.` };
+    }
+  }
+  return { list };
+}
 export const decodeSession = (text: string): Session | undefined => decode(text, sessionFrom);

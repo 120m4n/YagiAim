@@ -7,6 +7,7 @@ import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SchemeContext, useColors } from '../colors';
 import { Icon } from '../icons/Icon';
+import { Field } from './Lists';
 import { Txt } from './Txt';
 
 const SHEET_EASING = Easing.bezier(0.32, 0.72, 0, 1); // curva estándar de UIKit; R-6 la confirmará
@@ -164,6 +165,35 @@ export function Alert({ visible, title, message, onClose }: { visible: boolean; 
             <Txt variant="headline" color="accent">OK</Txt>
           </Pressable>
         </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+/** Diálogo con un campo de texto, "Cancelar" y un botón de acción. */
+export function PromptDialog({ visible, title, message, value, onChangeText, placeholder, actionLabel, onSubmit, onCancel }: {
+  visible: boolean; title: string; message?: string; value: string; onChangeText: (t: string) => void; placeholder: string;
+  actionLabel: string; onSubmit: () => void; onCancel: () => void;
+}) {
+  const p = useColors();
+  if (!visible) return null;
+  const btn = { flex: 1, height: 44, alignItems: 'center', justifyContent: 'center' } as const;
+  return (
+    <Modal transparent visible animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onCancel}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <View style={{ width: 300, borderRadius: 26, backgroundColor: p.sheet, overflow: 'hidden' }}>
+          <View style={{ padding: 20, gap: 8, alignItems: 'center' }}>
+            <Txt variant="headline" style={{ textAlign: 'center' }}>{title}</Txt>
+            {message ? <Txt variant="footnote" style={{ textAlign: 'center' }}>{message}</Txt> : null}
+            <View style={{ alignSelf: 'stretch', borderRadius: 12, backgroundColor: p.cell }}>
+              <Field value={value} onChangeText={onChangeText} placeholder={placeholder} autoFocus autoCapitalize="none" autoCorrect={false} keyboardType="url" onSubmitEditing={onSubmit} />
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: p.separator }}>
+            <Pressable onPress={onCancel} accessibilityRole="button" style={btn}><Txt variant="headline" color="accent">Cancelar</Txt></Pressable>
+            <Pressable onPress={onSubmit} accessibilityRole="button" style={[btn, { borderLeftWidth: 1, borderLeftColor: p.separator }]}><Txt variant="headline" semibold color="accent">{actionLabel}</Txt></Pressable>
+          </View>
+        </View>
       </View>
     </Modal>
   );
