@@ -19,7 +19,7 @@ description: "Task list for 004-react-native-android"
 - [x] D002 C-2 fuente → Inter + N/E/S/O como trazos propios + JetBrains Mono (PM-26)
 - [x] D003 C-3 mapa → MapLibre RN; OSM; satélite EOX Sentinel-2 cloudless 2016 + OpenFreeMap (PM-02)
 - [x] D004 C-4 materiales → colores sólidos medidos; desenfoque solo sobre el mapa (PM-27)
-- [x] D005 C-5 precisión de la brújula → FOP → tipo 11 → tipo 20 → `getRotationMatrix` → `-1` (PM-05; corregida el 2026-10-20)
+- [x] D005 C-5 precisión de la brújula → fusión propia con calibración del magnetómetro y WMM (PM-05; sustituyó a FOP → `values[4]` → `-1`)
 - [x] D006 C-6 calibración del sistema → nada (PM-24)
 - [x] D007 C-7 cruce del norte → camino corto, como iOS desde `464ffaf` (antes: vuelta larga)
 - [x] D008 C-8 referencias → sin cambios en iOS; capturas existentes + línea base Android aprobada (VA-9)
@@ -112,7 +112,7 @@ description: "Task list for 004-react-native-android"
 ## Phase 7: User Story 3 — Apuntamiento (P1)
 
 - [x] T080 [US3] Módulo Kotlin `modules/altitude` (PM-08) + `native/altitude.ts` — _escrito, sin compilar_
-- [ ] T081 [US3] Módulo Kotlin `modules/heading`: Fused Orientation Provider (rumbo verdadero o magnético, `headingErrorDegrees`); cadena de respaldo de PM-05: tipo 11 (`values[4]`) → tipo 20 → `getRotationMatrix` (1 + 2), con `GeomagneticField`, precisión de `values[4]` o desviación estándar circular de 2 s, `-1` solo con magnetómetro no fiable o ausente, y suavizado más fuerte sin giroscopio; filtro de 0.5°, tasa de R-3, eje de R-4, pitch con signo (PM-05, PM-07). Verificar en dispositivo las unidades del error y cómo indica FOP el norte magnético, y hacer la prueba del Redmi A5 (½ día) que elige entre los niveles 3 y 4 → `bench-log.md` — _escrito, sin compilar; reabierta el 2026-10-20: falta el nivel del tipo 20 y la desviación circular (hoy la precisión sale del estado de calibración), y la prueba en dispositivo_
+- [ ] T081 [US3] Rumbo (PM-05, PM-07): módulo Kotlin `modules/heading` con muestras a 20 Hz (tipos 1, 2, 14 y azimut del 11) y pitch con signo; fusión en `core/headingFusion.ts` + `core/magCalibration.ts` (calibración propia, WMM, precisión estimada con histéresis); tasa de R-3, eje de R-4 — _hecho y compilado (2026-10-15/20). Pendiente: filtro de 0.5° (PM-05 resolución 3) y la prueba del Redmi A5 en `bench-log.md`, que decide si el tipo 20 aporta algo frente a la fusión propia_
 - [x] T082 [US3] `state/locationStore.ts`: proveedor fusionado (PM-04), `location.last` cada 5 s, `isCachedLocation`, EMA de 0.25, `headingOffset`/`calibrate`, `usingMagneticFallback` según PM-05 (1), con tests del suavizado y de la persistencia
 - [x] T083 [US3] `state/motionStore.ts` (EMA 0.3, 10 Hz, `start` sin reentrada, `stop` → undefined)
 - [ ] T084 [US3] R-3 y R-4: mediciones en iOS y Android → `bench-log.md`; ajustar T081

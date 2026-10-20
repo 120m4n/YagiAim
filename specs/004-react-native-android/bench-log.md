@@ -2,15 +2,15 @@
 
 Plantillas de registro para las mediciones de `research.md` y los criterios que no se verifican con tests automáticos. Cada fila lleva la fecha, el dispositivo (modelo, versión de Android, versión de la app) y quién midió.
 
-## T081 Verificación de Fused Orientation Provider
+## T081 Verificación de Fused Orientation Provider (referencia: FOP no se usa en el rumbo desde el 2026-10-15; solo lo graba `DiagRecorder`)
 
 | Dispositivo | Android | Play Services | ¿FOP disponible? | Unidades de `headingErrorDegrees` (comparar con el valor de iOS en la misma situación) | ¿Indica norte magnético? ¿cómo? | Sin GPS: ¿rumbo magnético? |
 |---|---|---|---|---|---|---|
 | | | | | | | |
 
-## T081 Respaldo sin giroscopio: tipo 20 frente a cálculo propio (Redmi A5, ½ día)
+## T081 Sin giroscopio: tipo 20 frente a la fusión propia (Redmi A5, ½ día)
 
-Decide entre el nivel 3 (`TYPE_GEOMAGNETIC_ROTATION_VECTOR`) y el 4 (`getRotationMatrix` con los tipos 1 + 2) de PM-05. Sensores del Redmi A5 (`dumpsys sensorservice`, 2026-10-20): acelerómetro MiraMems `acc_mir3da`, magnetómetro MEMSIC `mmc5603`, tipo 20 de Sprd y de AOSP; sin giroscopio ni tipo 11.
+Decide si el tipo 20 (`TYPE_GEOMAGNETIC_ROTATION_VECTOR`) aporta algo frente a la fusión propia de PM-05 (`headingFusion`, que hoy es la que se usa). Datos: CSV de `DiagRecorder` (filas `grv`) y el rumbo `MA_CAL` de logcat. Sensores del Redmi A5 (`dumpsys sensorservice`, 2026-10-20): acelerómetro MiraMems `acc_mir3da`, magnetómetro MEMSIC `mmc5603`, tipo 20 de Sprd y de AOSP; sin giroscopio ni tipo 11.
 
 1. ¿El tipo 20 entrega `values[4]`? ¿Con qué valores?
 
@@ -21,27 +21,27 @@ Decide entre el nivel 3 (`TYPE_GEOMAGNETIC_ROTATION_VECTOR`) y el 4 (`getRotatio
 
 2. Ruido y deriva con el teléfono quieto 2 min en cada orientación, con el rumbo crudo y con el suavizado:
 
-| Orientación | Fuente | Desv. circular (°) | Deriva en 2 min (°) | Asentamiento tras girar (s) |
+| Orientación | Fuente (tipo 20 / fusión propia) | Desv. circular (°) | Deriva en 2 min (°) | Asentamiento tras girar (s) |
 |---|---|---|---|---|
 | N | tipo 20 | | | |
-| N | 1 + 2 | | | |
+| N | fusión | | | |
 | E | tipo 20 | | | |
-| E | 1 + 2 | | | |
+| E | fusión | | | |
 | S | tipo 20 | | | |
-| S | 1 + 2 | | | |
+| S | fusión | | | |
 | O | tipo 20 | | | |
-| O | 1 + 2 | | | |
+| O | fusión | | | |
 
 3. Rumbo frente al iPhone, lado a lado (mediana de 10):
 
-| Orientación | iOS | Tipo 20 | Δ | 1 + 2 | Δ |
+| Orientación | iOS | Tipo 20 | Δ | Fusión propia | Δ |
 |---|---|---|---|---|---|
 | N | | | | | |
 | E | | | | | |
 | S | | | | | |
 | O | | | | | |
 
-Criterio: Δ ≤ 5° (los teléfonos sin giroscopio no entran en el ≤ 2° de SC-004). Se elige el nivel con menor Δ; ante un empate, el que tenga menos ruido. Resultado: nivel ___
+Criterio: Δ ≤ 5° (los teléfonos sin giroscopio no entran en el ≤ 2° de SC-004). Si el tipo 20 no mejora a la fusión propia en Δ ni en ruido, se queda fuera. Resultado: ___
 
 ## R-3 Respuesta al escalón del rumbo suavizado (30°)
 
@@ -102,4 +102,4 @@ Decisiones y límites encontrados al implementar, a verificar en dispositivo:
 - **Doble toque del mapa**: un toque simple solo da de alta tras 300 ms sin otro toque; pendiente de comprobar que MapLibre no dispara `onPress` en el zoom.
 - **Defectos de Swift traspasados (no se corrigen)**: (1) `PingerLink` lanza `requestInFlight` si «Medir aquí» llega con un PING en vuelo del modo en vivo; (2) `LineCodec.summary` hace `Int(UInt)` y se cae con n ≥ 2⁶³ (los dorados lo excluyen); (3) `SessionCSV.escape` no entrecomilla un `\r\n` porque Swift lo trata como un solo carácter.
 - **Dependencias añadidas al plan**: `expo-location` (ubicación fusionada, PM-04), `react-native-svg` (íconos), `zustand`, `expo-system-ui`; `expo-file-system` hace de selector SAF (se descartó `expo-document-picker`).
-- **Respaldo sin giroscopio** (Redmi A5: acelerómetro + magnetómetro + «orientation» obsoleto): si no hay FOP (o no emite en 2 s) ni vector de rotación, el rumbo y el pitch salen de `getRotationMatrix` con filtro paso bajo (α 0.2). La precisión en grados se aproxima con el estado de calibración del magnetómetro (alta 5°, media 15°, baja 30°, no fiable −1): estimación, a contrastar con iOS en T084/SC-004.
+- **Respaldo sin giroscopio** (Redmi A5): _superado el mismo 2026-10-15_ por la fusión propia de PM-05 (`headingFusion` + `magCalibration`). Hoy el pitch sale del tipo 11, o de `getRotationMatrix` con paso bajo (0.08) si no lo hay; el rumbo y la precisión, de la fusión.

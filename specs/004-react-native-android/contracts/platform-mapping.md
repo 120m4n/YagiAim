@@ -55,26 +55,21 @@ Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia**
 
 - **Origen**: `LocationManager.swift` L114–138.
 - **iOS**: `CLHeading.trueHeading` (≥ 0 solo si Core Location conoce la ubicación), `magneticHeading`, `headingAccuracy` en grados, `headingFilter = 0.5`.
-- **Android**: **Fused Orientation Provider** (FOP, `play-services-location` ≥ 21.2) en el módulo `heading` (Kotlin). FOP tiene la misma semántica que `CLHeading`: rumbo referido al norte verdadero cuando conoce la declinación y al magnético cuando no hay ubicación, más el error del rumbo (`headingErrorDegrees`). Cadena de respaldo (C-5), tomando el primer nivel disponible:
-  1. **FOP**: necesita giroscopio y Play Services.
-  2. **`TYPE_ROTATION_VECTOR` (11)** → `getOrientation`, con precisión de `values[4]`.
-  3. **`TYPE_GEOMAGNETIC_ROTATION_VECTOR` (20)**: acelerómetro + magnetómetro, sin giroscopio (caso del Redmi A5, fusión Sprd/AOSP).
-  4. **Cálculo propio**: `getRotationMatrix` + `getOrientation` a partir de `TYPE_ACCELEROMETER` (1) y `TYPE_MAGNETIC_FIELD` (2), por si el tipo 20 del fabricante resulta ruidoso o defectuoso.
-  5. **Sin magnetómetro** → sin brújula (`-1`, "sin calibrar").
-
-  En los niveles 2 a 4 la declinación sale de `GeomagneticField` con la ubicación del teléfono. En los niveles 3 y 4:
-  - **Precisión en grados**: `values[4]` si el tipo 20 la entrega; si no, la desviación estándar circular del rumbo crudo en los últimos 2 s. Si Android marca el magnetómetro como `SENSOR_STATUS_UNRELIABLE`, `-1` ("sin calibrar"). Así la regla de ±15° funciona con datos medidos.
-  - **Suavizado más fuerte** que con giroscopio, por el ruido: se acepta un asentamiento de ~1–2 s, que con el teléfono quieto sobre el boom no estorba.
-  - **Elección entre 3 y 4**: la decide la prueba en dispositivo de T081 (`bench-log.md`); hasta entonces, el nivel 3.
+- **Android** (implementado el 2026-10-15; FOP no se usa en el rumbo): fusión propia en TypeScript (`core/headingFusion.ts`, conectada en `platform/androidDrivers.ts`). El módulo `heading` (Kotlin) solo entrega, a 20 Hz y promediados, el acelerómetro (1), el magnetómetro calibrado por el controlador (2), el magnetómetro sin calibrar (14) y, si existe, el azimut de `TYPE_ROTATION_VECTOR` (11). Exige acelerómetro y magnetómetro (`isAvailable`); sin ellos no hay brújula.
+  1. **Calibración propia del magnetómetro** (`core/magCalibration.ts`): desplazamiento y escala (hierro duro y blando) ajustados sobre el tipo 14 al campo total del WMM en el lugar. Se acepta con cobertura ≥ 12/26 y residuo ≤ 2.5 µT, se guarda y se reutiliza al reabrir la app. Mientras no hay calibración se usa el tipo 2.
+  2. **Rumbo**: azimut con compensación de inclinación (equivalente a `getOrientation`) a partir de la gravedad filtrada (τ 0.25 s) y el campo calibrado. La lectura es fiable si hay campo WMM y calibración, el módulo del campo se desvía ≤ 15 % y el error de inclinación es ≤ 10°. Con una lectura fiable, o sin tipo 11, se sigue el azimut propio con suavizado adaptativo (τ 0.5 s en reposo, 0.15 s cuando la innovación pasa de 3°). Con una lectura no fiable y tipo 11, el rumbo sigue los incrementos del tipo 11, que no sufre perturbaciones magnéticas pasajeras.
+  3. **Declinación**: WMM2025 propio (`core/wmm.ts`, no `GeomagneticField`). Se aplica solo con un fix vivo; si no, rumbo magnético y `usingMagnetic`.
+  4. **Precisión en grados**: sin campo WMM, 20°. Con campo, `(2 + 1.5·residuo, o 6 sin calibración) + 40·|desviación del campo| + 0.6·|error de inclinación|`, suavizada (τ 1 s) con histéresis: pasa a válida a ≤ 12° y deja de serlo tras 1 s por encima de 15°. Mientras no es válida se informa ≥ 16°, así que la regla de ±15° bloquea "Medir aquí" hasta calibrar. `-1` solo antes del primer evento o sin sensores.
+  5. **Teléfonos sin giroscopio (Redmi A5)**: sin tipo 11, el rumbo es siempre el azimut propio calibrado. El tipo 20 (`TYPE_GEOMAGNETIC_ROTATION_VECTOR`) no entra en la fusión. Solo lo graba `DiagRecorder`, junto con FOP y el tipo 11, para la comparación de T081.
 - **Diferencias**:
   1. "Conoce la ubicación": en iOS cuenta la caché del sistema.
   2. iOS entrega eventos a su propio ritmo y el EMA (α = 0.25 **por evento**) depende de ese ritmo.
   3. `headingFilter` se aplica a lo que entrega Core Location (antes del suavizado de la app).
 - **Resolución**:
-  0. Que `headingErrorDegrees` venga en grados y cómo indica FOP el uso del norte magnético se **verifica en dispositivo** (T081). Si FOP no lo indica, `usingMagneticFallback` = no hay fix de ubicación del sistema.
+  0. `usingMagneticFallback` = no hay fix vivo (no depende de FOP).
   1. Hay rumbo verdadero si el sistema tiene **algún** fix (incluido `getLastLocation()` del proveedor fusionado). La ubicación persistida por la app (`location.last`) **no** cuenta, porque Core Location tampoco la conoce.
   2. El ritmo de eventos se ajusta para que la **respuesta a un escalón** del rumbo suavizado coincida con iOS (ver research R-3: se mide en iOS y se fija la tasa de muestreo).
-  3. El módulo nativo emite solo cuando el azimut crudo cambia ≥ 0.5° respecto al último emitido.
+  3. El módulo nativo emite solo cuando el azimut crudo cambia ≥ 0.5° respecto al último emitido. _Pendiente: hoy se emite a 20 Hz sin ese filtro._
 - **Verificación**: SC-004 (≤ 2° frente a iOS) y prueba de escalón (R-3).
 
 ### PM-06 Referencia del rumbo (eje del teléfono)
