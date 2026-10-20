@@ -8,6 +8,41 @@ Plantillas de registro para las mediciones de `research.md` y los criterios que 
 |---|---|---|---|---|---|---|
 | | | | | | | |
 
+## T081 Respaldo sin giroscopio: tipo 20 frente a cálculo propio (Redmi A5, ½ día)
+
+Decide entre el nivel 3 (`TYPE_GEOMAGNETIC_ROTATION_VECTOR`) y el 4 (`getRotationMatrix` con los tipos 1 + 2) de PM-05. Sensores del Redmi A5 (`dumpsys sensorservice`, 2026-10-20): acelerómetro MiraMems `acc_mir3da`, magnetómetro MEMSIC `mmc5603`, tipo 20 de Sprd y de AOSP; sin giroscopio ni tipo 11.
+
+1. ¿El tipo 20 entrega `values[4]`? ¿Con qué valores?
+
+| Fuente del tipo 20 | Longitud de `values` | `values[4]` (rango observado) | Notas |
+|---|---|---|---|
+| Sprd | | | |
+| AOSP | | | |
+
+2. Ruido y deriva con el teléfono quieto 2 min en cada orientación, con el rumbo crudo y con el suavizado:
+
+| Orientación | Fuente | Desv. circular (°) | Deriva en 2 min (°) | Asentamiento tras girar (s) |
+|---|---|---|---|---|
+| N | tipo 20 | | | |
+| N | 1 + 2 | | | |
+| E | tipo 20 | | | |
+| E | 1 + 2 | | | |
+| S | tipo 20 | | | |
+| S | 1 + 2 | | | |
+| O | tipo 20 | | | |
+| O | 1 + 2 | | | |
+
+3. Rumbo frente al iPhone, lado a lado (mediana de 10):
+
+| Orientación | iOS | Tipo 20 | Δ | 1 + 2 | Δ |
+|---|---|---|---|---|---|
+| N | | | | | |
+| E | | | | | |
+| S | | | | | |
+| O | | | | | |
+
+Criterio: Δ ≤ 5° (los teléfonos sin giroscopio no entran en el ≤ 2° de SC-004). Se elige el nivel con menor Δ; ante un empate, el que tenga menos ruido. Resultado: nivel ___
+
 ## R-3 Respuesta al escalón del rumbo suavizado (30°)
 
 | Plataforma | Dispositivo | Repetición | t al 90 % (ms) | Eventos/s | Notas |

@@ -55,7 +55,17 @@ Formato: **Origen** (archivo:línea) · **iOS** · **Android** · **Diferencia**
 
 - **Origen**: `LocationManager.swift` L114–138.
 - **iOS**: `CLHeading.trueHeading` (≥ 0 solo si Core Location conoce la ubicación), `magneticHeading`, `headingAccuracy` en grados, `headingFilter = 0.5`.
-- **Android**: **Fused Orientation Provider** (FOP, `play-services-location` ≥ 21.2) en el módulo `heading` (Kotlin). FOP tiene la misma semántica que `CLHeading`: rumbo referido al norte verdadero cuando conoce la declinación y al magnético cuando no hay ubicación, más el error del rumbo (`headingErrorDegrees`). Respaldo, en dispositivos sin giroscopio o sin Play Services: `TYPE_ROTATION_VECTOR` → `getOrientation` + `GeomagneticField`, con precisión de `values[4]` o `-1` si no existe (C-5).
+- **Android**: **Fused Orientation Provider** (FOP, `play-services-location` ≥ 21.2) en el módulo `heading` (Kotlin). FOP tiene la misma semántica que `CLHeading`: rumbo referido al norte verdadero cuando conoce la declinación y al magnético cuando no hay ubicación, más el error del rumbo (`headingErrorDegrees`). Cadena de respaldo (C-5), tomando el primer nivel disponible:
+  1. **FOP**: necesita giroscopio y Play Services.
+  2. **`TYPE_ROTATION_VECTOR` (11)** → `getOrientation`, con precisión de `values[4]`.
+  3. **`TYPE_GEOMAGNETIC_ROTATION_VECTOR` (20)**: acelerómetro + magnetómetro, sin giroscopio (caso del Redmi A5, fusión Sprd/AOSP).
+  4. **Cálculo propio**: `getRotationMatrix` + `getOrientation` a partir de `TYPE_ACCELEROMETER` (1) y `TYPE_MAGNETIC_FIELD` (2), por si el tipo 20 del fabricante resulta ruidoso o defectuoso.
+  5. **Sin magnetómetro** → sin brújula (`-1`, "sin calibrar").
+
+  En los niveles 2 a 4 la declinación sale de `GeomagneticField` con la ubicación del teléfono. En los niveles 3 y 4:
+  - **Precisión en grados**: `values[4]` si el tipo 20 la entrega; si no, la desviación estándar circular del rumbo crudo en los últimos 2 s. Si Android marca el magnetómetro como `SENSOR_STATUS_UNRELIABLE`, `-1` ("sin calibrar"). Así la regla de ±15° funciona con datos medidos.
+  - **Suavizado más fuerte** que con giroscopio, por el ruido: se acepta un asentamiento de ~1–2 s, que con el teléfono quieto sobre el boom no estorba.
+  - **Elección entre 3 y 4**: la decide la prueba en dispositivo de T081 (`bench-log.md`); hasta entonces, el nivel 3.
 - **Diferencias**:
   1. "Conoce la ubicación": en iOS cuenta la caché del sistema.
   2. iOS entrega eventos a su propio ritmo y el EMA (α = 0.25 **por evento**) depende de ese ritmo.
