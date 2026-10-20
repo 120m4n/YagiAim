@@ -30,7 +30,7 @@ function Row({ k, v, onLongPress }: { k: string; v: string; onLongPress?: () => 
   return (
     <Pressable onLongPress={onLongPress} disabled={!onLongPress} style={{ flexDirection: 'row', gap: 24 }}>
       <Txt color="secondaryLabel" tabular style={{ width: 170 }}>{k}</Txt>
-      <Txt bold tabular>{v}</Txt>
+      <Txt bold tabular style={{ flexShrink: 1 }}>{v}</Txt>
     </Pressable>
   );
 }

@@ -114,10 +114,10 @@ export function MapScreen() {
                   <CompassView size={84} target={info?.bearing} />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Txt variant="headline" color="#FFFFFF">{selected.name}</Txt>
+                  <Txt variant="headline" color="#FFFFFF" numberOfLines={1}>{selected.name}</Txt>
                   {info ? (
                     <>
-                      <Txt variant="title3" bold tabular color="#FFFFFF">{`Azimut ${formatFixed(info.bearing, 1)}° ${cardinal(info.bearing)}`}</Txt>
+                      <Txt variant="title3" bold tabular color="#FFFFFF" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{`Azimut ${formatFixed(info.bearing, 1)}° ${cardinal(info.bearing)}`}</Txt>
                       <Txt variant="subheadline" color="accent">{distanceText(info) + (cached ? ' · ubicación anterior' : '')}</Txt>
                     </>
                   ) : (

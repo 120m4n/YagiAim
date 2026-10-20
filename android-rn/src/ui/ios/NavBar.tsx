@@ -1,5 +1,5 @@
 // Barra de navegación en línea: título centrado; elementos en cápsulas de vidrio (iOS 26).
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '../colors';
@@ -12,12 +12,19 @@ export const NAV_HEIGHT = 56;
 
 export function NavBar({ title, left, right, background, withInset = true }: { title: string; left?: ReactNode; right?: ReactNode; background?: string; withInset?: boolean }) {
   const insets = useSafeAreaInsets();
+  // Los botones ocupan su ancho natural y el título, centrado sobre toda la barra, se recorta con «…» entre el más ancho de los
+  // dos: así un título largo nunca aprieta "Cancelar" o "Guardar".
+  const [leftW, setLeftW] = useState(0);
+  const [rightW, setRightW] = useState(0);
+  const side = Math.max(leftW, rightW) + 8;
   return (
     <View style={{ paddingTop: withInset ? insets.top : 0, backgroundColor: background, zIndex: 2 }}>
-      <View style={{ height: NAV_HEIGHT, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-start', gap: 8 }}>{left}</View>
-        <Txt variant="headline" numberOfLines={1} style={{ maxWidth: '50%', textAlign: 'center' }} accessibilityRole="header">{title}</Txt>
-        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>{right}</View>
+      <View style={{ height: NAV_HEIGHT, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View pointerEvents="none" style={{ position: 'absolute', left: 16 + side, right: 16 + side, top: 0, bottom: 0, justifyContent: 'center' }}>
+          <Txt variant="headline" numberOfLines={1} style={{ textAlign: 'center' }} accessibilityRole="header">{title}</Txt>
+        </View>
+        <View onLayout={(e) => setLeftW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row', gap: 8 }}>{left}</View>
+        <View onLayout={(e) => setRightW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row', gap: 8 }}>{right}</View>
       </View>
     </View>
   );
@@ -28,8 +35,8 @@ export function NavTextButton({ title, onPress, disabled, bold }: { title: strin
   const p = useColors();
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" style={({ pressed }) => ({ opacity: disabled ? 0.4 : pressed ? 0.6 : 1 })}>
-      <GlassCapsule style={{ paddingHorizontal: 16 }}>
-        <Txt variant="body" semibold={bold} color={p.label}>{title}</Txt>
+      <GlassCapsule style={{ paddingHorizontal: 12 }}>
+        <Txt variant="body" semibold={bold} color={p.label} numberOfLines={1}>{title}</Txt>
       </GlassCapsule>
     </Pressable>
   );
