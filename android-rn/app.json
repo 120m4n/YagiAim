@@ -49,6 +49,15 @@
       ],
       "@maplibre/maplibre-react-native",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/adaptive-foreground.png",
+          "backgroundColor": "#011949",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
+      [
         "expo-font",
         {
           "fonts": [
