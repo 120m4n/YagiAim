@@ -96,3 +96,22 @@ final class SessionCSVTests: XCTestCase {
         XCTAssertEqual(SessionCSV.fileName(for: s, timeZone: utc5), "meshazimuth_Cerro_El_Pico_Cali___20261015-071203.csv")
     }
 }
+
+/// Motivos de error de la importación de repetidores (RepeaterStore.parse).
+final class RepeaterParseTests: XCTestCase {
+    private func reason(_ json: String) -> String? {
+        do { _ = try RepeaterStore.parse(Data(json.utf8)); return nil } catch { return error.localizedDescription }
+    }
+
+    func testReasons() {
+        XCTAssertEqual(reason("  \n"), "El archivo está vacío.")
+        XCTAssertTrue(reason("[{")?.hasPrefix("No es un JSON válido") == true)
+        XCTAssertEqual(reason(#"{"a":1}"#), "Se esperaba una lista JSON de repetidores ([ … ]).")
+        let ok = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","name":"A","latitude":1,"longitude":2}"#
+        XCTAssertNil(reason("[\(ok)]"))
+        XCTAssertEqual(reason(#"[\#(ok),{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FE","name":"B","longitude":2}]"#),
+                       "Repetidor #2: campo «latitude» ausente o inválido.")
+        XCTAssertEqual(reason(#"[{"id":"x","name":"A","latitude":1,"longitude":2}]"#), "Repetidor #1: campo «id» ausente o inválido.")
+        XCTAssertEqual(reason("[3]"), "Repetidor #1: formato inválido.")
+    }
+}

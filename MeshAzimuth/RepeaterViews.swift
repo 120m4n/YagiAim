@@ -12,7 +12,10 @@ struct RepeaterList: View {
     @AppStorage("list.sortByDistance") private var sortByDistance = true
     @State private var exportURL: URL?
     @State private var showImporter = false
-    @State private var importMessage: String?
+    @State private var importAlert: (title: String, message: String)?
+    @State private var showURLPrompt = false
+    @State private var urlText = ""
+    @State private var downloading = false
 
     private var rows: [Repeater] {
         var list = store.repeaters
@@ -84,6 +87,7 @@ struct RepeaterList: View {
                         }
                         Divider()
                         Button { showImporter = true } label: { Label("Importar JSON…", systemImage: "square.and.arrow.down") }
+                        Button { showURLPrompt = true } label: { Label("Importar desde URL…", systemImage: "globe.americas") }
                         if let exportURL, !store.repeaters.isEmpty {
                             ShareLink(item: exportURL) { Label("Exportar JSON", systemImage: "square.and.arrow.up") }
                         }
@@ -93,12 +97,22 @@ struct RepeaterList: View {
             .sheet(item: $editing) { r in
                 RepeaterEditor(repeater: r, isNew: !store.repeaters.contains { $0.id == r.id })
             }
-            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
-                importMessage = importFile(result)
-            }
-            .alert("Importación", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) {
+            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { importFile($0) }
+            .alert("Importar desde URL", isPresented: $showURLPrompt) {
+                TextField("https://…/repetidores.json", text: $urlText)
+                    .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Button("Cancelar", role: .cancel) {}
+                Button("Importar") { Task { await importURL() } }
+                    .disabled(!urlText.trimmingCharacters(in: .whitespaces).lowercased().hasPrefix("https://"))
+            } message: { Text("Dirección https de un JSON de repetidores.") }
+            .alert(importAlert?.title ?? "", isPresented: Binding(get: { importAlert != nil }, set: { if !$0 { importAlert = nil } })) {
                 Button("OK") {}
-            } message: { Text(importMessage ?? "") }
+            } message: { Text(importAlert?.message ?? "") }
+            .overlay {
+                if downloading {
+                    ProgressView("Descargando…").padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
             .onChange(of: store.repeaters, initial: true) { writeExport() }
         }
     }
@@ -110,16 +124,43 @@ struct RepeaterList: View {
         if let data = try? enc.encode(store.repeaters), (try? data.write(to: url)) != nil { exportURL = url }
     }
 
-    private func importFile(_ result: Result<URL, Error>) -> String {
-        guard case .success(let url) = result else { return "No se pudo abrir el archivo." }
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        guard let data = try? Data(contentsOf: url),
-              let list = try? JSONDecoder().decode([Repeater].self, from: data) else {
-            return "El archivo no tiene el formato esperado (lista JSON de repetidores)."
+    /// Valida, fusiona y avisa: el motivo del error, o el resumen de la importación.
+    private func importData(_ data: Data) {
+        do {
+            let list = try RepeaterStore.parse(data)
+            let r = store.merge(list)
+            importAlert = (r.added > 0 ? "Importación exitosa" : "Nada que importar",
+                           "Importados \(r.added) de \(list.count)." + (r.skipped > 0 ? " Omitidos \(r.skipped) (duplicados o inválidos)." : ""))
+        } catch {
+            importAlert = ("Error al importar", error.localizedDescription)
         }
-        let r = store.merge(list)
-        return "Importados \(r.added). Omitidos \(r.skipped) (duplicados o inválidos)."
+    }
+
+    private func importFile(_ result: Result<URL, Error>) {
+        do {
+            let url = try result.get()
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            importData(try Data(contentsOf: url))
+        } catch {
+            importAlert = ("Error al importar", "No se pudo abrir el archivo (\(error.localizedDescription)).")
+        }
+    }
+
+    private func importURL() async {
+        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespaces)) else {
+            importAlert = ("Error al importar", "La URL no es válida.")
+            return
+        }
+        downloading = true
+        defer { downloading = false }
+        do {
+            let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 15))
+            if let h = response as? HTTPURLResponse, !(200..<300).contains(h.statusCode) { throw ImportError("HTTP \(h.statusCode)") }
+            importData(data)
+        } catch {
+            importAlert = ("Error al importar", "No se pudo descargar el archivo (\(error.localizedDescription)).")
+        }
     }
 }
 
