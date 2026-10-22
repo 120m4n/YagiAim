@@ -78,6 +78,16 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         headingOffset = Geo.signedDelta(target: bearing, current: raw)
     }
 
+    /// Recalibración: reinicia el rumbo y el suavizado para que la precisión mostrada sea la actual.
+    /// iOS no deja borrar su calibración del magnetómetro; esto solo descarta el estado de la app.
+    func restartHeading() {
+        guard CLLocationManager.headingAvailable() else { return }
+        manager.stopUpdatingHeading()
+        hasSample = false
+        headingAccuracy = -1
+        manager.startUpdatingHeading()
+    }
+
     func stop() {
         manager.stopUpdatingLocation()
         manager.stopUpdatingHeading()
