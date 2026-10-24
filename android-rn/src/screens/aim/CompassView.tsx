@@ -8,7 +8,7 @@
 // 359° → 1° y 179° → −179° giran 2°, no casi una vuelta. Divergencias respecto a iOS (registradas en bench-log.md): interpolación
 // lineal corta que continúa sin reiniciar la curva (iOS: easeOut 0.15 s) y la vibración de «alineado» espera 300 ms de permanencia.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { Canvas, Group, Path, Skia, Text as SkText, useFont } from '@shopify/react-native-skia';
 import { Easing, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { formatFixed } from '../../core/formatC';
@@ -105,6 +105,15 @@ export function CompassView({ target, tolerance = 3, onAlignedChange, size: fixe
     return store.subscribe((s) => applyRef.current(s));
   }, [store]);
   useEffect(() => applyRef.current(store.getState()), [target, tolerance, store]);
+
+  // La vibración se repite mientras siga alineado: se corta al salir de la pantalla o de la app.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => s !== 'active' && haptics.stop());
+    return () => {
+      sub.remove();
+      haptics.stop();
+    };
+  }, [haptics]);
 
   // Vibración: solo tras 300 ms de permanencia alineado; se corta al salir.
   useEffect(() => {

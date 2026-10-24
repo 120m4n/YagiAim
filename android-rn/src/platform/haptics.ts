@@ -1,9 +1,10 @@
-// Haptics.swift — vibración sostenida al alinear la antena: continua (0.8) + golpes (1.0) cada 0.5 s durante `duration`
-// segundos o hasta `stop()`. PM-10: en Android, una forma de onda de 6 ciclos de [40 ms a 255, 460 ms a 204] = 3 s.
+// Haptics.swift — vibración sostenida al alinear la antena: continua (0.8) + golpes (1.0) cada 0.5 s.
+// PM-10: en Android, una forma de onda de 6 ciclos de [40 ms a 255, 460 ms a 204] = 3 s. A diferencia de iOS, que vibra
+// `duration` segundos una sola vez, aquí la ráfaga se repite (con una pausa) mientras siga alineado, hasta `stop()`.
 import type { HapticsDriver } from '../native/haptics';
 
 export class Haptics {
-  private token = 0;
+  private timer: ReturnType<typeof setTimeout> | undefined;
   private active = false;
 
   constructor(private readonly driver: HapticsDriver) {}
@@ -12,36 +13,36 @@ export class Haptics {
     return this.active;
   }
 
-  startAligned(duration = 3): void {
+  /** Ráfaga de `duration` s cada `duration + pause` s hasta `stop()`. */
+  startAligned(duration = 3, pause = 1.5): void {
     if (this.active) return; // varias brújulas pueden disparar a la vez
-    try {
-      if (!this.driver.hasAmplitudeControl()) {
+    this.active = true;
+    const burst = () => {
+      try {
+        if (this.driver.hasAmplitudeControl()) {
+          const cycles = Math.ceil(duration / 0.5);
+          const timings: number[] = [];
+          const amplitudes: number[] = [];
+          for (let i = 0; i < cycles; i++) {
+            timings.push(40, 460);
+            amplitudes.push(255, 204);
+          }
+          this.driver.vibrateWaveform(timings, amplitudes);
+        } else {
+          this.driver.notify('success');
+        }
+      } catch {
         this.driver.notify('success');
-        return;
       }
-      const cycles = Math.ceil(duration / 0.5);
-      const timings: number[] = [];
-      const amplitudes: number[] = [];
-      for (let i = 0; i < cycles; i++) {
-        timings.push(40, 460);
-        amplitudes.push(255, 204);
-      }
-      this.driver.vibrateWaveform(timings, amplitudes);
-      this.active = true;
-      this.token += 1;
-      const mine = this.token;
-      setTimeout(() => {
-        if (this.token === mine) this.active = false;
-      }, duration * 1000);
-    } catch {
-      this.driver.notify('success');
-    }
+      this.timer = setTimeout(burst, (duration + pause) * 1000);
+    };
+    burst();
   }
 
   stop(): void {
     if (!this.active) return;
     this.active = false;
-    this.token += 1;
+    clearTimeout(this.timer);
     this.driver.cancel();
   }
 

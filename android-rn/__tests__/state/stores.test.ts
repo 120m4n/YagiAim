@@ -140,7 +140,7 @@ describe('Haptics (PM-10)', () => {
   }
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
-  test('3 s = 6 ciclos de [40 ms a 255, 460 ms a 204]; no reentra mientras está activa; stop() cancela', () => {
+  test('ráfaga de 3 s = 6 ciclos de [40 ms a 255, 460 ms a 204]; no reentra mientras está activa; stop() cancela', () => {
     const { d, calls } = fake();
     const h = new Haptics(d);
     h.startAligned();
@@ -151,24 +151,41 @@ describe('Haptics (PM-10)', () => {
     h.startAligned();
     expect(calls).toHaveLength(3);
   });
-  test('el token evita que un temporizador viejo desactive una vibración nueva', () => {
-    const { d } = fake();
+  test('mientras siga alineado repite la ráfaga cada 3 s + 1,5 s de pausa; stop() corta los repetidos', () => {
+    const { d, calls } = fake();
+    const h = new Haptics(d);
+    h.startAligned();
+    jest.advanceTimersByTime(4400);
+    expect(calls).toHaveLength(1);
+    jest.advanceTimersByTime(100);
+    expect(calls).toHaveLength(2);
+    jest.advanceTimersByTime(9000);
+    expect(calls).toHaveLength(4);
+    expect(h.isActive).toBe(true);
+    h.stop();
+    jest.advanceTimersByTime(20000);
+    expect(calls).toHaveLength(5); // 4 ráfagas + cancel
+    expect(h.isActive).toBe(false);
+  });
+  test('un stop() seguido de otro startAligned() no hereda el temporizador de la anterior', () => {
+    const { d, calls } = fake();
     const h = new Haptics(d);
     h.startAligned();
     jest.advanceTimersByTime(2000);
     h.stop();
     h.startAligned();
-    jest.advanceTimersByTime(1500); // vence el temporizador de la primera (3 s) con la segunda activa
-    expect(h.isActive).toBe(true);
-    jest.advanceTimersByTime(2000);
-    expect(h.isActive).toBe(false);
+    jest.advanceTimersByTime(2500); // vencería la primera (4,5 s); la segunda solo lleva 2,5 s
+    expect(calls.filter((c) => c.startsWith('wave'))).toHaveLength(2);
   });
-  test('sin control de amplitud usa el equivalente de .success y no queda activa', () => {
+  test('sin control de amplitud usa el equivalente de .success y también repite', () => {
     const { d, calls } = fake(false);
     const h = new Haptics(d);
     h.startAligned();
     h.startAligned();
+    expect(calls).toEqual(['notify:success']);
+    jest.advanceTimersByTime(4500);
     expect(calls).toEqual(['notify:success', 'notify:success']);
+    h.stop();
     expect(h.isActive).toBe(false);
   });
 });
