@@ -35,6 +35,14 @@ struct RawFrame: Equatable {
     var truncated: Bool
 }
 
+/// Línea `M,`: resultado de `MEAS n` del pinger `proto=2` (specs/005.../contracts/meas-line.md). dBm / dB.
+struct MeasResult: Equatable {
+    var n: Int, kept: Int
+    var mean: Double, sd: Double, median: Double, min: Double, max: Double
+    /// Menos del 80 % tras el filtro: un paquete ajeno cubrió parte de la ventana.
+    var clean: Bool { Double(kept) >= 0.8 * Double(n) }
+}
+
 enum PingerEvent: Equatable {
     case hello(fw: String, proto: Int, radio: String, id: String)
     case cfg([String: String])
@@ -44,6 +52,7 @@ enum PingerEvent: Equatable {
     case ping(PingResult)
     case summary(BurstSummary)
     case raw(RawFrame)
+    case meas(MeasResult)                    // solo proto=2
     case unknown(String)                     // prefijo desconocido o línea mal formada: se ignora (contrato, regla 3)
 }
 
@@ -55,6 +64,7 @@ enum LineCodec {
         if line.hasPrefix("P,") { event = ping(line.dropFirst(2)) }
         else if line.hasPrefix("S,") { event = summary(line.dropFirst(2)) }
         else if line.hasPrefix("R,") { event = rawFrame(line.dropFirst(2)) }
+        else if line.hasPrefix("M,") { event = meas(line.dropFirst(2)) }
         else if line.hasPrefix("#HELLO ") { event = hello(line.dropFirst(7)) }
         else if line.hasPrefix("#CFG ") { event = cfg(line.dropFirst(5)) }
         else if line.hasPrefix("#OK ") { event = .ok(String(line.dropFirst(4))) }
@@ -82,6 +92,15 @@ enum LineCodec {
         }
         return .ping(PingResult(seq: UInt32(seq), tag: f[1].uppercased(), status: status, rttMs: rtt,
                                 snrUp: up, snrDn: dn, rssiDn: rssi, nResp: UInt8(nResp)))
+    }
+
+    private static func meas(_ body: Substring) -> PingerEvent? {
+        // n,kept,mean,sd,median,min,max  (se toleran campos añadidos al final)
+        let f = body.split(separator: ",", omittingEmptySubsequences: false)
+        guard f.count >= 7, let n = uint(f[0]), n > 0, let kept = uint(f[1]), kept <= n else { return nil }
+        let v = f[2...6].compactMap(number)
+        guard v.count == 5 else { return nil }
+        return .meas(MeasResult(n: Int(n), kept: Int(kept), mean: v[0], sd: v[1], median: v[2], min: v[3], max: v[4]))
     }
 
     private static func summary(_ body: Substring) -> PingerEvent? {

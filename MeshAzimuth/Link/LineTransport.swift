@@ -23,6 +23,7 @@ enum LinkError: Error, Equatable {
     case deviceNotFound
     case connectionLost
     case incompatibleFirmware(proto: Int)
+    case outdatedFirmware(fw: String, minimum: String)
     case timeout
     case writeFailed
 
@@ -33,6 +34,7 @@ enum LinkError: Error, Equatable {
         case .deviceNotFound: "No se encontró el pinger."
         case .connectionLost: "Conexión con el pinger perdida."
         case .incompatibleFirmware(let proto): "Firmware incompatible (proto=\(proto))"
+        case .outdatedFirmware(let fw, let min): "Actualiza el firmware del pinger: tiene \(fw) y hace falta \(min) o posterior."
         case .timeout: "El pinger no responde."
         case .writeFailed: "No se pudo enviar el comando al pinger."
         }
@@ -40,14 +42,24 @@ enum LinkError: Error, Equatable {
 
     /// La pantalla debe ofrecer un botón a Ajustes (nunca un spinner infinito).
     var opensSettings: Bool { self == .bluetoothOff || self == .unauthorized }
+
+    var isOutdatedFirmware: Bool { if case .outdatedFirmware = self { true } else { false } }
 }
 
 /// Pinger descubierto. La identidad es el identificador del periférico (se recuerda el último usado).
 struct PingerDevice: Identifiable, Equatable {
     let id: UUID
-    var name: String        // "YagiPinger-1A2B"
+    var name: String        // "YagiPinger-1A2B" o "PingPong-PI-5E58C8AB"
     var fw: String?         // tras #HELLO
     var proto: Int?
+
+    /// TRACE (`YagiPinger-`, proto=1) o baliza (`PingPong-PI-`, proto=2, spec 005). Cada uno tiene su propio enlace.
+    enum Kind {
+        case yagi, pingPong
+        var namePrefix: String { self == .yagi ? "YagiPinger-" : "PingPong-PI-" }
+        var lastDeviceKey: String { self == .yagi ? "pinger.lastDevice" : "beacon.lastDevice" }
+    }
+    var kind: Kind { name.hasPrefix(Kind.pingPong.namePrefix) ? .pingPong : .yagi }
 }
 
 /// Canal de líneas `proto=1` con el pinger: BLE NUS en campo, `SimulatedPinger` en tests y demos.
