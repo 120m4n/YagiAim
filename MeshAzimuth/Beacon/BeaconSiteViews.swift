@@ -78,6 +78,8 @@ struct BeaconSiteEditor: View {
     @State private var lonText = ""
     @State private var altitudeText = ""
     @State private var freqText = ""
+    @State private var freqUnlocked = false
+    @FocusState private var freqFocused: Bool
 
     private static func parse(_ t: String) -> Double? { Double(t.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")) }
     private var lat: Double? { Self.parse(latText).flatMap { abs($0) <= 90 ? $0 : nil } }
@@ -95,10 +97,23 @@ struct BeaconSiteEditor: View {
                     Text("Dónde está la baliza. El rumbo medido con el barrido se contrasta con el azimut a este punto.")
                 }
                 Section {
-                    TextField("MHz", text: $freqText).keyboardType(.decimalPad)
-                    if freq == nil { Text("Entre 902 y 928 MHz y a 1 MHz o más de 915.800 (MeshCore).").foregroundStyle(.red).font(.footnote) }
+                    if freqUnlocked {
+                        TextField("MHz", text: $freqText).keyboardType(.decimalPad).focused($freqFocused)
+                        if freq == nil { Text("Entre 902 y 928 MHz y a 1 MHz o más de 915.800 (MeshCore).").foregroundStyle(.red).font(.footnote) }
+                    } else {
+                        // Bloqueada por defecto: un cambio por error deja al pinger escuchando donde no hay baliza.
+                        LabeledContent {
+                            Text("\(freqText) MHz").monospacedDigit()
+                        } label: {
+                            Label("Bloqueada", systemImage: "lock.fill").foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { freqUnlocked = true; freqFocused = true }
+                        .accessibilityAction(named: "Editar frecuencia") { freqUnlocked = true; freqFocused = true }
+                    }
                 } header: { Text("Frecuencia de la baliza") } footer: {
-                    Text("La del firmware de la baliza (914.000 por defecto).")
+                    Text("Debe coincidir con la del firmware de la baliza (914.000 por defecto). Cambiarla aquí no reprograma la baliza: solo cambia lo que escucha el pinger."
+                         + (freqUnlocked ? "" : " Toca dos veces para editarla."))
                 }
                 Section {
                     TextField("Altitud antena (m s.n.m.)", text: $altitudeText).keyboardType(.decimalPad)
