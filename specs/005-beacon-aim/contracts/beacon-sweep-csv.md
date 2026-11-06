@@ -12,3 +12,5 @@ sweep_id,kind,t_iso,point,lat,lon,map_bearing_deg,beacon_freq_mhz,floor_dbm,head
 - En las filas `R` quedan vacías `center_deg … peak_dbm`. En la fila `B` quedan vacías `heading_deg … valid`.
 - `valid`: `1` o `0` (`kept < 0,8·n`, nivel < piso + 10 dB o brújula peor que ±15°).
 - `map_bearing_deg`: el azimut del mapa al punto, para comparar con `center_deg`.
+- `point`: nombre del sitio de baliza. `lat`, `lon`: posición del teléfono (sitio A) al exportar; vacías sin GPS.
+- `t_iso` de la fila `B`: el de la última lectura.

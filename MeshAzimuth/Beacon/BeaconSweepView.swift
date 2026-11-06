@@ -11,6 +11,8 @@ struct BeaconSweepView: View {
     @State private var sweep: BeaconSweep
     @State private var showPicker = false
     @State private var showResult = false
+    @State private var tone = BeaconTone()
+    @State private var toneOn = false          // apagado por defecto (FR-027)
 
     init(site: BeaconSite, link: PingerLink) {
         self.link = link
@@ -33,6 +35,11 @@ struct BeaconSweepView: View {
                     legend
                     bisectStatus
                     controls
+                    Toggle(isOn: $toneOn) {
+                        Label("Tono", systemImage: "speaker.wave.2")
+                        Text("Más agudo cuanto más cerca del máximo, para orientar sin mirar.").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal)
                     if simulated && loc.heading == nil { simHeadingSlider }
                     ForEach(sweep.warnings, id: \.self) { w in
                         Label(w, systemImage: "exclamationmark.triangle")
@@ -52,10 +59,21 @@ struct BeaconSweepView: View {
         }
         .navigationDestination(isPresented: $showResult) { BeaconResultView(sweep: sweep) }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true; motion.start() }
-        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; sweep.pause(link: link) }
-        .onChange(of: scenePhase) { _, p in if p != .active { sweep.pause(link: link) } }   // sin modo background
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; sweep.pause(link: link); toneOn = false }
+        .onChange(of: scenePhase) { _, p in if p != .active { sweep.pause(link: link); toneOn = false } }   // sin modo background
+        .onChange(of: toneOn) { _, on in on ? tone.start() : tone.stop(); updateTone() }
+        .onChange(of: sweep.last) { updateTone() }
+        .onChange(of: sweep.phase) { updateTone() }
         .onChange(of: heading, initial: true) { _, h in link.simInputs.heading = h }
         .onChange(of: markerBearing, initial: true) { _, b in link.simInputs.target = b }
+    }
+
+    /// Altura según el nivel relativo al máximo; silencio sin máximo o con el medidor parado.
+    private func updateTone() {
+        guard toneOn, sweep.phase == .metering, let peak = sweep.peak, let last = sweep.last else {
+            return tone.update(relativeDB: nil)
+        }
+        tone.update(relativeDB: last.level - peak.level)
     }
 
     // MARK: - Medidor

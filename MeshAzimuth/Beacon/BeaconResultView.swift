@@ -8,6 +8,7 @@ struct BeaconResultView: View {
     @AppStorage("tolerance") private var tolerance = 3.0
     @State private var guideToCenter = true
     @State private var aligned = false
+    @State private var csvURL: URL?
 
     private enum Agreement { case good, fair, poor }
 
@@ -29,7 +30,15 @@ struct BeaconResultView: View {
         }
         .navigationTitle("Resultado")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let csvURL {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: csvURL) { Label("Exportar barrido", systemImage: "square.and.arrow.up") }
+                }
+            }
+        }
         .onAppear { guideToCenter = sweep.bisect.center != nil }
+        .task { csvURL = writeCSV() }
     }
 
     // MARK: - Estimación
@@ -126,6 +135,16 @@ struct BeaconResultView: View {
                 }
             }
         }
+    }
+
+    /// CSV del barrido (US5) en un archivo temporal para la hoja de compartir.
+    private func writeCSV() -> URL? {
+        guard !sweep.readings.isEmpty else { return nil }
+        let name = BeaconCSV.fileName(site: sweep.site, started: sweep.startedAt ?? .now)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        let text = BeaconCSV.make(id: sweep.id, site: sweep.site, observer: loc.location?.coordinate, mapBearing: info?.bearing,
+                                  floor: sweep.floor, readings: sweep.readings, bisect: sweep.bisect, fw: sweep.fw)
+        return (try? text.write(to: url, atomically: true, encoding: .utf8)) != nil ? url : nil
     }
 
     private func row(_ k: String, _ v: String) -> some View {

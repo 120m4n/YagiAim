@@ -31,6 +31,9 @@ final class BeaconSweep {
     static let floorSamples = 64
 
     let site: BeaconSite
+    /// Identifica el barrido en el CSV; "Nuevo barrido" da otro.
+    private(set) var id = UUID()
+    private(set) var fw: String?
     private(set) var phase: Phase = .idle
     private(set) var floor: Double?
     private(set) var readings: [BeaconReading] = []
@@ -50,6 +53,7 @@ final class BeaconSweep {
     /// Mide el piso una vez (si no lo hay), vuelve a la frecuencia de la baliza y arranca el medidor.
     func start(link: PingerLink, pose: @escaping @MainActor () -> BeaconPose) async {
         guard link.isOperational else { return }
+        fw = link.device?.fw
         link.stopMeter()
         do {
             if floor == nil {
@@ -74,7 +78,7 @@ final class BeaconSweep {
 
     /// "Nuevo barrido": borra lecturas y máximo; conserva el piso y la frecuencia (US3-4).
     func reset() {
-        readings = []; last = nil; peak = nil; bisect = .notEnough; dirty = 0; startedAt = nil
+        readings = []; last = nil; peak = nil; bisect = .notEnough; dirty = 0; startedAt = nil; id = UUID()
     }
 
     func add(_ m: MeasResult, pose: BeaconPose) {
