@@ -131,7 +131,7 @@ Exportar el barrido como CSV (una fila por lectura con rumbo, inclinación, nive
 - **FR-022** Cada lectura se guarda con nivel, `kept/n`, rumbo (`loc.heading`) e inclinación (`motion.pitch`) en el instante de la respuesta.
 - **FR-023** Máximo retenido: el mayor nivel válido del barrido y su rumbo.
 - **FR-024** Bisección (función pura en `Beacon/BeaconBisect.swift`):
-  - agrupa las lecturas válidas en celdas de 2° de rumbo (máximo por celda);
+  - agrupa las lecturas válidas en celdas de 2° de rumbo (media por celda: 99 % a ±3° frente al 97 % con el máximo, 500 barridos simulados);
   - busca el máximo y, a cada lado, el primer cruce de −3 dB con interpolación lineal;
   - el centro es la media circular de los dos cruces, y el ancho del haz su diferencia;
   - si falta un lado, devuelve qué lado barrer.

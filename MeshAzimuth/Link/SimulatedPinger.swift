@@ -18,6 +18,17 @@ final class SimulatedPinger: LineTransport, @unchecked Sendable {
         var lossProbability = 0.05
         var delayScale = 1.0           // 1 = tiempos reales; <1 acelera las demos
         var seed: UInt64 = 1
+        /// Con baliza: el pinger es `PingPong-PI` `proto=2` y responde a `MEAS` (spec 005, FR-028).
+        var beacon: BeaconSim?
+    }
+
+    /// Baliza CW virtual en `targetBearing + bearingOffset`, con el patrón `yagiGain` del pinger.
+    struct BeaconSim {
+        var freq = "914.000"
+        var peakDbm = -65.0            // nivel en el centro del haz
+        var floorDbm = -99.0
+        var noiseSigma = 0.5           // dB por lectura
+        var bearingOffset = 4.0        // la baliza "real" no está justo en el marcador (error del mapa, reflexión)
     }
 
     private(set) var state: LinkState {
@@ -80,6 +91,7 @@ final class SimulatedPinger: LineTransport, @unchecked Sendable {
         private var seq: UInt32 = 0
         private var txLog: [(start: Double, dur: Double)] = []   // ms, ya escalados
         private var task: Task<Void, Never>?
+        private var freq = "915.800"
 
         init(config: Config, heading: @escaping @Sendable () -> Double?, target: @escaping @Sendable () -> Double?,
              emit: @escaping @Sendable (String) -> Void) {
@@ -94,8 +106,10 @@ final class SimulatedPinger: LineTransport, @unchecked Sendable {
             guard let word = parts.first?.uppercased() else { return }
             let arg = parts.count > 1 ? parts[1] : ""
             switch word {
+            case "HELLO" where config.beacon != nil: emit("#HELLO fw=0.5.1 proto=2 role=pinger radio=SX1262 id=5E58C8")
             case "HELLO": emit("#HELLO fw=sim proto=1 radio=SX1262 id=51AA01")
-            case "CFG?": emit("#CFG freq=915.800 bw=250 sf=10 cr=5 txp=22 hash=\(hash ?? "") rate=\(rateMs) timeout=auto raw=0")
+            case "MEAS" where config.beacon != nil: meas(arg)
+            case "CFG?": emit("#CFG freq=\(freq) bw=250 sf=10 cr=5 txp=22 hash=\(hash ?? "") rate=\(rateMs) timeout=auto raw=0")
             case "STOP": emit("#OK stop")
             case "MON": emit("#OK mon=\(arg.lowercased())")
             case "SET": set(arg)
@@ -108,6 +122,10 @@ final class SimulatedPinger: LineTransport, @unchecked Sendable {
             let kv = arg.split(separator: "=", maxSplits: 1).map(String.init)
             guard kv.count == 2 else { return emit("!ERR syntax") }
             switch kv[0].lowercased() {
+            case "freq" where config.beacon != nil:
+                guard let f = Double(kv[1]), (902...928).contains(f) else { return emit("!ERR range freq 902.000-928.000") }
+                freq = String(format: "%.3f", f)
+                emit("#OK freq=\(freq)")
             case "hash":
                 guard let h = Repeater.normalizedHashPrefix(kv[1]) else { return emit("!ERR range hash 00-FF") }
                 hash = h
@@ -121,6 +139,34 @@ final class SimulatedPinger: LineTransport, @unchecked Sendable {
             default:
                 emit("!ERR unknown \(kv[0])")
             }
+        }
+
+        private func meas(_ arg: String) {
+            let n = arg.isEmpty ? 64 : Int(arg.split(separator: " ").first ?? "") ?? -1
+            guard (16...256).contains(n) else { return emit("!ERR range meas 16-256") }
+            guard !pending, let b = config.beacon else { return emit("!ERR state busy") }
+            pending = true
+            task = Task { await runMeas(n, b) }
+        }
+
+        /// `n` lecturas de RSSI cuantizadas a 0,5 dB: baliza (si se escucha su frecuencia) sumada en potencia al piso.
+        private func runMeas(_ n: Int, _ b: BeaconSim) async {
+            defer { pending = false }
+            try? await Task.sleep(for: .milliseconds(Double(n) * 2.2 * config.delayScale))   // MEAS 32 ≈ 70 ms
+            if Task.isCancelled { return }
+            let signal: Double? = freq == b.freq ? {
+                guard let h = heading(), let t = target() else { return b.peakDbm }
+                return b.peakDbm + Self.yagiGain(deltaDeg: Geo.signedDelta(target: t + b.bearingOffset, current: h),
+                                                 n: config.n, fbDB: config.frontToBackDB)
+            }() : nil
+            let v = (0..<n).map { _ in
+                var p = pow(10, (b.floorDbm + rng.gaussian() * 0.7) / 10)
+                if let signal { p += pow(10, (signal + rng.gaussian() * b.noiseSigma) / 10) }
+                return (10 * log10(p) * 2).rounded() / 2
+            }.sorted()
+            let mean = v.reduce(0, +) / Double(n)
+            let sd = sqrt(v.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(n))
+            emit(String(format: "M,%d,%d,%.2f,%.2f,%.1f,%.1f,%.1f", n, n, mean, sd, Geo.median(v) ?? mean, v[0], v[n - 1]))
         }
 
         private func ping() {
