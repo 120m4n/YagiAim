@@ -12,7 +12,7 @@ struct ContentView: View {
     @State private var showList = false
     @State private var showAimer = false
     @State private var showAbout = false
-    @State private var showBeacon = false
+    /// Modo baliza (spec 005): con él activo la app entera es la de baliza; sin él, la de repetidores.
     @AppStorage("beacon.enabled") private var beaconEnabled = false
     @AppStorage("onboarding.done") private var onboardingDone = false
     @AppStorage("map.satellite") private var mapStyleSatellite = false
@@ -28,6 +28,13 @@ struct ContentView: View {
     }
 
     var body: some View {
+        Group {
+            if beaconEnabled { BeaconHomeView() } else { traceMap }
+        }
+        .onAppear { loc.start() }
+    }
+
+    private var traceMap: some View {
         NavigationStack {
             MapView(
                 repeaters: store.repeaters,
@@ -82,10 +89,6 @@ struct ContentView: View {
                     }
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    if beaconEnabled {
-                        Button { showBeacon = true } label: { Image(systemName: "dot.radiowaves.left.and.right") }
-                            .accessibilityLabel("Orientar con baliza")
-                    }
                     Button { showAbout = true } label: { Image(systemName: "info.circle") }
                     Button { showList = true } label: { Image(systemName: "list.bullet") }
                 }
@@ -103,12 +106,10 @@ struct ContentView: View {
             .sheet(isPresented: $showList) { RepeaterList() }
             .sheet(isPresented: $showAbout) { AboutView() }
             .fullScreenCover(isPresented: $showAimer) { AimView() }
-            .fullScreenCover(isPresented: $showBeacon) { BeaconHomeView() }
             .fullScreenCover(isPresented: Binding(get: { !onboardingDone }, set: { if !$0 { onboardingDone = true } })) {
                 OnboardingView()
             }
         }
-        .onAppear { loc.start() }
     }
 
     @ViewBuilder private var bottomPanel: some View {

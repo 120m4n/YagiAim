@@ -45,8 +45,12 @@ final class BeaconStore {
     private let selectedKey = "beacons.selected"
 
     var sites: [BeaconSite] = [] { didSet { save() } }
+    // Solo se escribe si cambia: cualquier escritura en UserDefaults redibuja las vistas con @AppStorage.
     var selectedID: UUID? {
-        didSet { UserDefaults.standard.set(selectedID?.uuidString, forKey: selectedKey) }
+        didSet {
+            guard selectedID?.uuidString != UserDefaults.standard.string(forKey: selectedKey) else { return }
+            UserDefaults.standard.set(selectedID?.uuidString, forKey: selectedKey)
+        }
     }
     var selected: BeaconSite? { sites.first { $0.id == selectedID } }
 
@@ -70,6 +74,7 @@ final class BeaconStore {
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(sites) { UserDefaults.standard.set(data, forKey: key) }
+        guard let data = try? JSONEncoder().encode(sites), data != UserDefaults.standard.data(forKey: key) else { return }
+        UserDefaults.standard.set(data, forKey: key)
     }
 }

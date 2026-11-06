@@ -44,8 +44,14 @@ struct PingerPicker: View {
             List {
                 if simulated {
                     Section {
-                        Button { pick(nil) } label: { Label("Pinger simulado", systemImage: "wand.and.stars") }
-                    } footer: { Text("Modo de depuración: genera mediciones sin hardware, según el rumbo y el azimut reales.") }
+                        Button { pick(nil) } label: {
+                            Label(kind == .yagi ? "Pinger simulado" : "Baliza simulada", systemImage: "wand.and.stars")
+                        }
+                    } footer: {
+                        Text(kind == .yagi
+                             ? "Modo de depuración: genera mediciones sin hardware, según el rumbo y el azimut reales."
+                             : "Modo de depuración: simula el pinger PingPong-PI escuchando una baliza CW situada cerca del marcador (a +4°). Sin brújula, el rumbo se mueve con un control.")
+                    }
                 }
 
                 if let error = scanner.state.failure {

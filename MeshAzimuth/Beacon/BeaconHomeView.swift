@@ -2,17 +2,21 @@ import CoreLocation
 import MapKit
 import SwiftUI
 
-/// Entrada del modo baliza (spec 005): mapa con los sitios de baliza, alta tocando el mapa y acceso al barrido.
+/// Pantalla principal del modo baliza (spec 005): sustituye al mapa de repetidores mientras el modo está activo.
+/// Mapa con los sitios de baliza, alta tocando el mapa y acceso al barrido.
 /// Tiene su propio almacén y su propio enlace (`PingerLink(kind: .pingPong)`): nada se comparte con TRACE.
 struct BeaconHomeView: View {
     @Environment(LocationManager.self) private var loc
-    @Environment(\.dismiss) private var dismiss
     @AppStorage("map.satellite") private var satellite = false
-    @State private var store = BeaconStore()
+    @AppStorage("beacon.enabled") private var beaconEnabled = true
+    // Del entorno, creado una vez en la App: aquí se recrearía en cada redibujado de `ContentView` y su
+    // `init` escribe en UserDefaults, lo que redibuja las vistas con @AppStorage: bucle infinito.
+    @Environment(BeaconStore.self) private var store
     @State private var link: PingerLink
     @State private var tracking: MKUserTrackingMode = .follow
     @State private var pending: PendingSite?
     @State private var showList = false
+    @State private var showAbout = false
     @State private var sweeping: BeaconSite?
 
     init() {
@@ -41,8 +45,11 @@ struct BeaconHomeView: View {
                 .toolbarBackground(.visible, for: .navigationBar)
                 .toolbarColorScheme(.dark, for: .navigationBar)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) { Button("Salir") { dismiss() } }
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { beaconEnabled = false } label: { Label("Repetidores", systemImage: "chevron.backward") }
+                    }
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        Button { showAbout = true } label: { Image(systemName: "info.circle") }
                         Button { showList = true } label: { Image(systemName: "list.bullet") }
                     }
                 }
@@ -52,9 +59,9 @@ struct BeaconHomeView: View {
                                      isNew: true)
                 }
                 .sheet(isPresented: $showList) { BeaconSiteList() }
+                .sheet(isPresented: $showAbout) { AboutView() }
                 .navigationDestination(item: $sweeping) { BeaconSweepView(site: $0, link: link) }
         }
-        .environment(store)
         .onDisappear { link.disconnect() }
     }
 
@@ -67,7 +74,7 @@ struct BeaconHomeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(s.name).font(.headline)
                     if let info {
-                        Text(String(format: "Marcador a %.1f° %@", info.bearing, Geo.cardinal(info.bearing)))
+                        Text(String(format: "Az %.1f° %@", info.bearing, Geo.cardinal(info.bearing)))
                             .font(.title3.monospacedDigit().bold())
                         Text("\(info.distanceText) · \(s.freq) MHz").font(.subheadline).foregroundStyle(Theme.accent)
                     } else {

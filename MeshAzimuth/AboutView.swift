@@ -48,9 +48,11 @@ struct AboutView: View {
                 }
 
                 Section {
-                    Toggle("Pinger simulado", isOn: $simulatedPinger)
+                    Toggle(beaconEnabled ? "Baliza simulada" : "Pinger simulado", isOn: $simulatedPinger)
                 } header: { Text("Depuración") } footer: {
-                    Text("Sustituye al pinger BLE por uno simulado que genera mediciones según tu rumbo y el azimut. Sirve para probar la pantalla sin hardware.")
+                    Text(beaconEnabled
+                         ? "Sustituye al pinger BLE por uno simulado que escucha una baliza CW cerca del marcador. Sirve para probar el barrido y la bisección sin hardware."
+                         : "Sustituye al pinger BLE por uno simulado que genera mediciones según tu rumbo y el azimut. Sirve para probar la pantalla sin hardware.")
                 }
 
                 Section {
@@ -66,7 +68,7 @@ struct AboutView: View {
                     }
                 } header: { Text("Desarrollador") } footer: {
                     if beaconEnabled {
-                        Text("Modo baliza activado: aparece en la barra del mapa. Cinco toques en el indicativo lo ocultan.")
+                        Text("Modo baliza activado: la pantalla principal es la de baliza. Cinco toques en el indicativo vuelven a repetidores.")
                     }
                 }
 
