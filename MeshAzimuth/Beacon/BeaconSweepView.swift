@@ -250,7 +250,7 @@ struct BeaconLinkCard: View {
             } else if link.state == .connecting || link.state == .scanning {
                 HStack(spacing: 10) { ProgressView(); Text("Conectando al pinger…") }
             } else {
-                Button(action: onConnect) { Label("Conectar pinger PingPong-PI", systemImage: "antenna.radiowaves.left.and.right") }
+                Button(action: onConnect) { Label("Conectar catcher PingPong-CA", systemImage: "antenna.radiowaves.left.and.right") }
                     .buttonStyle(.borderedProminent)
                 Text("Necesita firmware \(PingerLink.minBeaconFirmware) o posterior.").font(.caption).foregroundStyle(.secondary)
             }

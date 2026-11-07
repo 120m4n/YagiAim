@@ -18,7 +18,7 @@ final class SimulatedPinger: LineTransport, @unchecked Sendable {
         var lossProbability = 0.05
         var delayScale = 1.0           // 1 = tiempos reales; <1 acelera las demos
         var seed: UInt64 = 1
-        /// Con baliza: el pinger es `PingPong-PI` `proto=2` y responde a `MEAS` (spec 005, FR-028).
+        /// Con baliza: el pinger es un catcher `PingPong-CA` `proto=2` y responde a `MEAS` (spec 005, FR-028).
         var beacon: BeaconSim?
     }
 
@@ -106,7 +106,7 @@ final class SimulatedPinger: LineTransport, @unchecked Sendable {
             guard let word = parts.first?.uppercased() else { return }
             let arg = parts.count > 1 ? parts[1] : ""
             switch word {
-            case "HELLO" where config.beacon != nil: emit("#HELLO fw=0.5.1 proto=2 role=pinger radio=SX1262 id=5E58C8")
+            case "HELLO" where config.beacon != nil: emit("#HELLO fw=0.5.1 proto=2 role=catcher radio=SX1262 id=5E58C8")
             case "HELLO": emit("#HELLO fw=sim proto=1 radio=SX1262 id=51AA01")
             case "MEAS" where config.beacon != nil: meas(arg)
             case "CFG?": emit("#CFG freq=\(freq) bw=250 sf=10 cr=5 txp=22 hash=\(hash ?? "") rate=\(rateMs) timeout=auto raw=0")

@@ -14,6 +14,7 @@
 - **Sitios de baliza propios**: el usuario da de alta de antemano el marcador del sitio de la baliza (como hoy con los repetidores, en un almacén propio). El rumbo estimado por la bisección se contrasta con el azimut a ese marcador.
 - **Enlace**: segunda instancia de `PingerLink` con `kind = .pingPong` (solo `PingPong-PI-`, `proto=2`, último dispositivo propio). La instancia TRACE no cambia.
 - Lo central es el **barrido y la bisección**.
+- **Catcher** (ping-ponger-meshcore b5b1f418): el firmware "pinger" de la baliza pasa a llamarse catcher. Anuncia `PingPong-CA-…` y `role=catcher`; las placas sin reflashear siguen con `PingPong-PI-…` y `role=pinger`. La app acepta los dos nombres; `role` no se comprueba. Envs `*_trace_catcher`.
 
 **Input**: "Una variante de MeshAzimuth que escuche la baliza CW para orientar la Yagi. Se usaría para montar infraestructura nueva punto a punto. Orientar, no medir."
 

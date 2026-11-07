@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Escanea pingers BLE cercanos de un tipo (`YagiPinger-*` o `PingPong-PI-*`) para el selector.
+/// Escanea pingers BLE cercanos de un tipo (`YagiPinger-*` o catchers `PingPong-CA-*`) para el selector.
 @MainActor @Observable
 final class PingerScanner {
     private(set) var devices: [PingerDevice] = []
@@ -50,7 +50,7 @@ struct PingerPicker: View {
                     } footer: {
                         Text(kind == .yagi
                              ? "Modo de depuración: genera mediciones sin hardware, según el rumbo y el azimut reales."
-                             : "Modo de depuración: simula el pinger PingPong-PI escuchando una baliza CW situada cerca del marcador (a +4°). Sin brújula, el rumbo se mueve con un control.")
+                             : "Modo de depuración: simula el catcher PingPong-CA escuchando una baliza CW situada cerca del marcador (a +4°). Sin brújula, el rumbo se mueve con un control.")
                     }
                 }
 

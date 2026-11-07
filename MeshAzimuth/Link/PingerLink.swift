@@ -124,7 +124,7 @@ final class PingerLink {
             case .yagi:
                 guard proto == 1 else { throw LinkError.incompatibleFirmware(proto: proto) }
             case .pingPong:
-                // `role=pinger` no se comprueba: el escáner ya filtra por `PingPong-PI-` y `.hello` no lo trae.
+                // `role` (catcher; pinger en placas antiguas) no se comprueba: el escáner ya filtra por nombre y `.hello` no lo trae.
                 guard proto == 2 else { throw LinkError.incompatibleFirmware(proto: proto) }
                 guard Self.firmware(fw, atLeast: Self.minBeaconFirmware) else {
                     throw LinkError.outdatedFirmware(fw: fw, minimum: Self.minBeaconFirmware)

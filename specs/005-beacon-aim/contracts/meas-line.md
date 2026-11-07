@@ -1,11 +1,11 @@
 # Contrato: `MEAS` del pinger `proto=2` (lo que usa el modo baliza)
 
-Fuente de verdad: `ping-ponger-meshcore`, `firmware/examples/trace_pinger/main.cpp` (fw ≥ 0.5.1) y el fixture `firmware/examples/trace_pinger/tests/fixtures/lines/events_m.txt`. Aquí solo va lo que la app necesita.
+Fuente de verdad: `ping-ponger-meshcore`, `firmware/examples/trace_catcher/main.cpp` (fw ≥ 0.5.1) y el fixture `firmware/examples/trace_pinger/tests/fixtures/lines/events_m.txt`. Aquí solo va lo que la app necesita.
 
 ## Anuncio BLE y handshake
 
-- Nombre BLE: `PingPong-PI-<8 hex>`. Mismo servicio NUS que el `YagiPinger` (UUIDs en `specs/003-…/contracts/ble-nus-gatt.md`).
-- `HELLO` → `#HELLO fw=0.5.1 proto=2 role=pinger radio=SX1262 id=5E58C8`
+- Nombre BLE: `PingPong-CA-<8 hex>` (catcher; `PingPong-PI-` en placas flasheadas antes de ping-ponger-meshcore b5b1f418, que la app también acepta). Mismo servicio NUS que el `YagiPinger` (UUIDs en `specs/003-…/contracts/ble-nus-gatt.md`).
+- `HELLO` → `#HELLO fw=0.5.1 proto=2 role=catcher radio=SX1262 id=5E58C8`
 - `CFG?` → `#CFG freq=915.800 bw=250 sf=10 cr=5 txp=22 hash= rate=1500 timeout=auto raw=0`
 - `STOP` → `#OK stop` y `MON off` → `#OK mon=off`, como en `proto=1`.
 

@@ -49,17 +49,20 @@ enum LinkError: Error, Equatable {
 /// Pinger descubierto. La identidad es el identificador del periférico (se recuerda el último usado).
 struct PingerDevice: Identifiable, Equatable {
     let id: UUID
-    var name: String        // "YagiPinger-1A2B" o "PingPong-PI-5E58C8AB"
+    var name: String        // "YagiPinger-1A2B" o "PingPong-CA-5E58C8AB"
     var fw: String?         // tras #HELLO
     var proto: Int?
 
-    /// TRACE (`YagiPinger-`, proto=1) o baliza (`PingPong-PI-`, proto=2, spec 005). Cada uno tiene su propio enlace.
+    /// TRACE (`YagiPinger-`, proto=1) o baliza (catcher `PingPong-CA-`, proto=2, spec 005). Cada uno tiene su propio enlace.
     enum Kind {
         case yagi, pingPong
-        var namePrefix: String { self == .yagi ? "YagiPinger-" : "PingPong-PI-" }
+        /// El catcher se llamaba "pinger" (`PingPong-PI-`) hasta ping-ponger-meshcore b5b1f418; las placas
+        /// flasheadas antes lo siguen anunciando hasta reflashearlas.
+        var namePrefixes: [String] { self == .yagi ? ["YagiPinger-"] : ["PingPong-CA-", "PingPong-PI-"] }
+        func matches(_ name: String) -> Bool { namePrefixes.contains { name.hasPrefix($0) } }
         var lastDeviceKey: String { self == .yagi ? "pinger.lastDevice" : "beacon.lastDevice" }
     }
-    var kind: Kind { name.hasPrefix(Kind.pingPong.namePrefix) ? .pingPong : .yagi }
+    var kind: Kind { Kind.pingPong.matches(name) ? .pingPong : .yagi }
 }
 
 /// Canal de líneas `proto=1` con el pinger: BLE NUS en campo, `SimulatedPinger` en tests y demos.

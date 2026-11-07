@@ -31,6 +31,17 @@ final class BeaconCodecTests: XCTestCase {
         }
     }
 
+    /// El escáner filtra por nombre: catcher nuevo (`PingPong-CA-`) y placas sin reflashear (`PingPong-PI-`).
+    func testDeviceKindFromAdvertisedName() {
+        func kind(_ n: String) -> PingerDevice.Kind { PingerDevice(id: UUID(), name: n).kind }
+        XCTAssertEqual(kind("PingPong-CA-5E58C8AB"), .pingPong)
+        XCTAssertEqual(kind("PingPong-PI-5E58C8AB"), .pingPong)
+        XCTAssertEqual(kind("YagiPinger-1A2B"), .yagi)
+        XCTAssertFalse(PingerDevice.Kind.pingPong.matches("YagiPinger-1A2B"))
+        XCTAssertFalse(PingerDevice.Kind.yagi.matches("PingPong-CA-5E58C8AB"))
+        XCTAssertFalse(PingerDevice.Kind.pingPong.matches("PingPong-PO-5E58C8AB"))   // otro rol del repo
+    }
+
     func testCleanAtTheEightyPercentLimit() {
         let m = { (kept: Int) in MeasResult(n: 64, kept: kept, mean: -90, sd: 0, median: -90, min: -90, max: -90) }
         XCTAssertFalse(m(51).clean)      // 51 < 51.2

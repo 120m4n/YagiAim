@@ -130,7 +130,7 @@ Para montar un enlace **propio** punto a punto no hace falta un repetidor: se de
 **Hardware** (repo [`ping-ponger-meshcore`](https://github.com/120m4n/ping-ponger-meshcore), rama `exp/analizador-pobre`, desde `firmware/`):
 
 ```bash
-pio run -e ProMicro_trace_pinger -t upload        # pinger fw ≥ 0.5.1 (anuncia PingPong-PI-…), o Xiao_nrf52_trace_pinger
+pio run -e ProMicro_trace_catcher -t upload       # catcher fw ≥ 0.5.1 (anuncia PingPong-CA-…), o Xiao_nrf52_trace_catcher
 pio run -e Xiao_nrf52_cw_beacon_high -t upload    # baliza low/mid/high = −9/0/14 dBm según la distancia
 ```
 
@@ -141,7 +141,7 @@ Guía de la baliza (niveles, LED, frecuencia): [FLASHING.md](https://github.com/
 **Paso a paso:**
 
 1. En el mapa de baliza, toca donde está la baliza (sitio B) para crear su **marcador**. La frecuencia viene bloqueada en 914.000 MHz; se edita con dos toques y debe coincidir con la del firmware de la baliza (cambiarla en la app no reprograma la baliza).
-2. Con la Yagi en el sitio A, el teléfono plano sobre el boom y el pinger pegado (el BLE de la Faketec llega a ~1 m), toca **Barrer** → *Conectar pinger PingPong-PI* → **Empezar barrido**. La app mide el piso de ruido a 1 MHz de la baliza y empieza a leer.
+2. Con la Yagi en el sitio A, el teléfono plano sobre el boom y el pinger pegado (el BLE de la Faketec llega a ~1 m), toca **Barrer** → *Conectar catcher PingPong-CA* → **Empezar barrido**. La app mide el piso de ruido a 1 MHz de la baliza y empieza a leer.
 3. Gira la Yagi **despacio** (unos 20°/s) de lado a lado, más allá de donde la señal cae 3 dB, con la misma postura y el brazo fuera del haz. Activa **Tono** si quieres orientar sin mirar: es más agudo cuanto más cerca del máximo.
 4. Cuando la app cruza los dos puntos de −3 dB propone el **rumbo central** (bisección), más preciso que el máximo, que es plano en una Yagi de 3 elementos (±3–5° frente a ±20°). Si falta un lado, dice hacia dónde barrer.
 5. En **Resultado** ves el centro, el ancho del haz medido y la **diferencia con el marcador**. Una diferencia grande puede ser una reflexión o el marcador mal situado: decides tú. La brújula guía hacia el centro estimado o hacia el marcador; fija la Yagi ahí.
