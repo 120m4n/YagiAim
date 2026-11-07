@@ -1,0 +1,15 @@
+file	line	key
+MeshAzimuth/AboutView.swift	9	pinger.simulated
+MeshAzimuth/AimView.swift	12	tolerance
+MeshAzimuth/ContentView.swift	15	onboarding.done
+MeshAzimuth/ContentView.swift	16	map.satellite
+MeshAzimuth/ContentView.swift	18	map.camera
+MeshAzimuth/Link/BLELineTransport.swift	13	pinger.lastDevice
+MeshAzimuth/LocationManager.swift	17	boom.offset
+MeshAzimuth/LocationManager.swift	18	boom.offset
+MeshAzimuth/LocationManager.swift	29	location.last
+MeshAzimuth/MeshAzimuthApp.swift	15	pinger.simulated
+MeshAzimuth/PingerPicker.swift	38	pinger.simulated
+MeshAzimuth/RepeaterStore.swift	30	repeaters.v1
+MeshAzimuth/RepeaterStore.swift	31	repeaters.selected
+MeshAzimuth/RepeaterViews.swift	12	list.sortByDistance

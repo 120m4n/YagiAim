@@ -1,0 +1,9 @@
+MeshAzimuth (Android) — avisos de terceros
+
+Íconos      Glifos de Lucide (https://lucide.dev), licencia ISC. Copyright (c) Lucide Contributors, y Cole Bemis 2013-2022 (Feather).
+            Se usan como base de los 33 glifos propios (tools/icons/build.mjs → src/ui/icons/glyphs.ts). No se calca ni deriva de los SF Symbols.
+Fuentes     Inter (SIL Open Font License 1.1) © The Inter Project Authors; JetBrains Mono (SIL OFL 1.1) © JetBrains s.r.o.
+Mapas       © OpenStreetMap contributors (ODbL), teselas de tile.openstreetmap.org.
+            EOxCloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016 & 2017), CC BY 4.0.
+            © OpenFreeMap © OpenMapTiles © OpenStreetMap contributors.
+Código      Las dependencias de npm conservan sus propias licencias (ver package-lock.json).

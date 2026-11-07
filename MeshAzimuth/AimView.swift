@@ -1,3 +1,4 @@
+import CoreMotion
 import SwiftUI
 
 // MARK: - Pantalla de apuntamiento a pantalla completa
@@ -12,6 +13,10 @@ struct AimView: View {
     @AppStorage("tolerance") private var tolerance = 3.0
     @State private var aligned = false
     @State private var confirmCalibrate = false
+    // Recalibración de la brújula (como android-rn): en curso mientras `recalStart` no es nil.
+    @State private var recalStart: Date?
+    @State private var recalSlow = false
+    @State private var recalDone: Double?
 
     var body: some View {
         NavigationStack {
@@ -62,12 +67,16 @@ struct AimView: View {
                             HStack {
                                 Button("Calibrar boom") { confirmCalibrate = true }
                                     .disabled(loc.rawHeading == nil)
+                                Button(recalStart == nil ? "Recalibrar brújula" : "Cancelar") {
+                                    recalStart == nil ? startRecal() : endRecal()
+                                }
                                 if loc.headingOffset != 0 {
                                     Button("Restablecer (\(String(format: "%+.1f", loc.headingOffset))°)") { loc.headingOffset = 0 }
                                 }
                             }
                             .buttonStyle(.bordered)
                             .font(.footnote)
+                            recalStatus
                         }
                         .confirmationDialog("¿La Yagi está apuntando exactamente al repetidor?",
                                             isPresented: $confirmCalibrate, titleVisibility: .visible) {
@@ -79,7 +88,7 @@ struct AimView: View {
 
                     PingerSection(repeater: r, bearing: info?.bearing)
 
-                    Text("Sostén el teléfono plano sobre el boom, con la parte superior hacia el director. Aléjate de metal y del cable coaxial.")
+                    Text("Para recalibrar la brújula, pulsa «Recalibrar brújula» y mueve el teléfono en ocho durante 30–60 s, lejos de metal.\nSostén el teléfono plano sobre el boom, con la parte superior hacia el director. Aléjate de metal y del cable coaxial.")
                         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
@@ -87,6 +96,7 @@ struct AimView: View {
             }
             .padding(.top)
             }
+            .task(id: recalStart) { await watchRecal() }
             .navigationTitle(store.selected?.name ?? "Apuntar")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -96,6 +106,59 @@ struct AimView: View {
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true; motion.start() }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; motion.stop(); link.disconnect() }
         .onChange(of: scenePhase) { _, phase in if phase != .active { link.stopLive() } }   // sin modo background
+    }
+
+    private func startRecal() {
+        recalDone = nil
+        recalSlow = false
+        loc.restartHeading()
+        motion.start(magnetic: true)
+        recalStart = .now
+    }
+
+    private func endRecal(done accuracy: Double? = nil) {
+        recalStart = nil
+        recalDone = accuracy
+        motion.start()
+    }
+
+    /// Termina cuando la precisión se mantiene ≤ 15° durante 2 s (en Android basta un instante y parpadea).
+    private func watchRecal() async {
+        guard let start = recalStart else { return }
+        var goodSince: Date?
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(500))
+            let a = loc.headingAccuracy
+            goodSince = (a >= 0 && a <= 15) ? goodSince ?? .now : nil
+            if let g = goodSince, Date.now.timeIntervalSince(g) >= 2 { endRecal(done: a); return }
+            recalSlow = Date.now.timeIntervalSince(start) > 60
+        }
+    }
+
+    @ViewBuilder private var recalStatus: some View {
+        if recalStart != nil {
+            VStack(spacing: 4) {
+                Label("Recalibrando: mueve el teléfono en ocho, inclinándolo del todo. Calibración \(magLevelText) · precisión \(accuracyText)",
+                      systemImage: "exclamationmark.triangle")
+                if recalSlow {
+                    Text("Lleva más de 1 min: aléjate de metal, del cable coaxial y de la Yagi.")
+                }
+            }
+            .font(.footnote).foregroundStyle(Theme.target).multilineTextAlignment(.center)
+            .padding(.horizontal)
+        } else if let d = recalDone {
+            Label(String(format: "Brújula calibrada: precisión ±%.0f°", d), systemImage: "checkmark.circle.fill")
+                .font(.footnote).foregroundStyle(.green)
+        }
+    }
+
+    private var magLevelText: String {
+        switch motion.magCalibration {
+        case .low: "baja"
+        case .medium: "media"
+        case .high: "alta"
+        default: "sin calibrar"
+        }
     }
 
     private var accuracyText: String {

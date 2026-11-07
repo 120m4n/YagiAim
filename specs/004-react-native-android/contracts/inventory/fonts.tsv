@@ -1,0 +1,51 @@
+file	line	font
+MeshAzimuth/AboutView.swift	26	.system(size: 44, weight: .semibold
+MeshAzimuth/AboutView.swift	28	.title2.bold(
+MeshAzimuth/AboutView.swift	30	.subheadline
+MeshAzimuth/AboutView.swift	67	.caption
+MeshAzimuth/AimView.swift	43	.body.monospacedDigit(
+MeshAzimuth/AimView.swift	51	.footnote
+MeshAzimuth/AimView.swift	55	.footnote
+MeshAzimuth/AimView.swift	70	.footnote
+MeshAzimuth/AimView.swift	83	.footnote
+MeshAzimuth/AimView.swift	109	.largeTitle.bold(
+MeshAzimuth/AimView.swift	113	.largeTitle.bold(
+MeshAzimuth/AimView.swift	118	.title2
+MeshAzimuth/CompassView.swift	79	.system(size: size * 0.07, weight: .bold, design: .rounded
+MeshAzimuth/CompassView.swift	86	.system(size: size * 0.035, design: .monospaced
+MeshAzimuth/ContentView.swift	52	.caption2
+MeshAzimuth/ContentView.swift	64	.footnote
+MeshAzimuth/ContentView.swift	115	.headline
+MeshAzimuth/ContentView.swift	118	.title3.monospacedDigit(
+MeshAzimuth/ContentView.swift	120	.subheadline
+MeshAzimuth/ContentView.swift	137	.subheadline
+MeshAzimuth/LinkCard.swift	16	.subheadline.bold(
+MeshAzimuth/LinkCard.swift	17	.caption
+MeshAzimuth/LinkCard.swift	20	.caption
+MeshAzimuth/LinkCard.swift	35	.headline
+MeshAzimuth/LinkCard.swift	36	.caption
+MeshAzimuth/LinkCard.swift	37	.footnote
+MeshAzimuth/LinkCard.swift	47	.footnote
+MeshAzimuth/LinkCard.swift	69	.footnote
+MeshAzimuth/LinkCard.swift	72	.body.monospacedDigit(
+MeshAzimuth/LinkCard.swift	77	.caption
+MeshAzimuth/OnboardingView.swift	23	.system(size: 64, weight: .semibold
+MeshAzimuth/OnboardingView.swift	25	.title.bold(
+MeshAzimuth/PermissionBanner.swift	11	.footnote.bold(
+MeshAzimuth/PermissionBanner.swift	13	.caption
+MeshAzimuth/PingerPicker.swift	66	.caption
+MeshAzimuth/PingerPicker.swift	73	.footnote
+MeshAzimuth/PingerSection.swift	22	.footnote
+MeshAzimuth/PingerSection.swift	61	.footnote
+MeshAzimuth/PingerSection.swift	63	.footnote
+MeshAzimuth/PingerSection.swift	70	.footnote
+MeshAzimuth/PingerSection.swift	77	.caption
+MeshAzimuth/PingerSection.swift	81	.callout.monospacedDigit(
+MeshAzimuth/PingerSection.swift	84	.footnote
+MeshAzimuth/RepeaterViews.swift	47	.headline
+MeshAzimuth/RepeaterViews.swift	49	.caption.monospacedDigit(
+MeshAzimuth/RepeaterViews.swift	160	.footnote
+MeshAzimuth/SessionView.swift	37	.caption
+MeshAzimuth/SessionView.swift	54	.callout.monospacedDigit(
+MeshAzimuth/SessionView.swift	55	.caption.monospacedDigit(
+MeshAzimuth/TrackingButton.swift	30	.system(size: 18, weight: .semibold

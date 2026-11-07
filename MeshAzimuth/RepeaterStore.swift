@@ -82,3 +82,40 @@ final class RepeaterStore {
         }
     }
 }
+
+/// Error de importación con el motivo en español, para el aviso.
+struct ImportError: LocalizedError {
+    let errorDescription: String?
+    init(_ message: String) { errorDescription = message }
+}
+
+extension RepeaterStore {
+    /// Decodifica un JSON de repetidores importado; si falla, `ImportError` dice por qué (vacío, JSON inválido,
+    /// no es lista, o repetidor #N con un campo ausente o inválido).
+    static func parse(_ data: Data) throws -> [Repeater] {
+        guard !String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw ImportError("El archivo está vacío.")
+        }
+        do {
+            return try JSONDecoder().decode([Repeater].self, from: data)
+        } catch let e as DecodingError {
+            throw ImportError(reason(e))
+        }
+    }
+
+    private static func reason(_ e: DecodingError) -> String {
+        let (path, field): ([CodingKey], String?) = switch e {
+        case .keyNotFound(let k, let c): (c.codingPath, k.stringValue)
+        case .typeMismatch(_, let c), .valueNotFound(_, let c), .dataCorrupted(let c): (c.codingPath, c.codingPath.dropFirst().first?.stringValue)
+        @unknown default: ([], nil)
+        }
+        guard let i = path.first?.intValue else {
+            if case .dataCorrupted(let c) = e {
+                let detail = (c.underlyingError as NSError?)?.userInfo[NSDebugDescriptionErrorKey] as? String
+                return "No es un JSON válido\(detail.map { " (\($0))" } ?? "")."
+            }
+            return "Se esperaba una lista JSON de repetidores ([ … ])."
+        }
+        return "Repetidor #\(i + 1): " + (field.map { "campo «\($0)» ausente o inválido." } ?? "formato inválido.")
+    }
+}

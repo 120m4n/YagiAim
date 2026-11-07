@@ -1,0 +1,34 @@
+sf_symbol	occurrences(file:line)
+antenna.radiowaves.left.and.right	MeshAzimuth/LinkCard.swift:51 MeshAzimuth/MapView.swift:176 MeshAzimuth/PingerPicker.swift:64 MeshAzimuth/RepeaterViews.swift:69
+arrow.clockwise	MeshAzimuth/AimView.swift:112
+arrow.counterclockwise	MeshAzimuth/AimView.swift:112 MeshAzimuth/PingerSection.swift:83 MeshAzimuth/SessionView.swift:58
+checkmark	MeshAzimuth/RepeaterViews.swift:53
+checkmark.circle.fill	MeshAzimuth/AimView.swift:108 MeshAzimuth/LinkCard.swift:34
+chevron.left.forwardslash.chevron.right	MeshAzimuth/AboutView.swift:58
+chevron.right	MeshAzimuth/ContentView.swift:126
+ellipsis.circle	MeshAzimuth/RepeaterViews.swift:90
+exclamationmark.triangle	MeshAzimuth/AimView.swift:50 MeshAzimuth/LinkCard.swift:20 MeshAzimuth/PingerPicker.swift:52
+exclamationmark.triangle.fill	MeshAzimuth/LinkCard.swift:39
+globe.americas	MeshAzimuth/ContentView.swift:79
+info.circle	MeshAzimuth/ContentView.swift:83 MeshAzimuth/PingerSection.swift:21
+iphone.gen3	MeshAzimuth/OnboardingView.swift:11
+list.bullet	MeshAzimuth/ContentView.swift:84
+list.bullet.rectangle	MeshAzimuth/PingerSection.swift:68
+location	MeshAzimuth/RepeaterViews.swift:82 MeshAzimuth/TrackingButton.swift:12
+location.fill	MeshAzimuth/TrackingButton.swift:13
+location.north.line	MeshAzimuth/PingerSection.swift:60
+location.north.line.fill	MeshAzimuth/TrackingButton.swift:14
+location.slash	MeshAzimuth/PermissionBanner.swift:10
+map	MeshAzimuth/AboutView.swift:65 MeshAzimuth/ContentView.swift:79
+mappin.and.ellipse	MeshAzimuth/OnboardingView.swift:9
+pencil	MeshAzimuth/RepeaterViews.swift:62
+plus	MeshAzimuth/RepeaterViews.swift:78
+questionmark.circle	MeshAzimuth/AboutView.swift:38
+scope	MeshAzimuth/AboutView.swift:25 MeshAzimuth/PingerSection.swift:52
+square.and.arrow.down	MeshAzimuth/RepeaterViews.swift:86
+square.and.arrow.up	MeshAzimuth/RepeaterViews.swift:88 MeshAzimuth/SessionView.swift:65
+textformat	MeshAzimuth/RepeaterViews.swift:83
+trash	MeshAzimuth/RepeaterViews.swift:59
+wand.and.stars	MeshAzimuth/PingerPicker.swift:46
+waveform	MeshAzimuth/PingerSection.swift:50
+wifi.slash	MeshAzimuth/ContentView.swift:63
