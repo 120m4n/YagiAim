@@ -123,6 +123,40 @@ Si no ves ese patrón, revisa la calibración del boom, el hash y la polarizaci�
 | Aviso «el pinger retrasó un envío» | Superaste su límite de tiempo en el aire; la muestra queda invalidada. Usa «En vivo» a 2 s (ya es el valor por defecto). |
 | Quiero probar sin hardware | *Acerca de → Depuración → Pinger simulado*: genera mediciones según tu rumbo y el azimut. |
 
+## 6. Orientar con baliza (enlaces nuevos)
+
+Para montar un enlace **propio** punto a punto no hace falta un repetidor: se deja una **baliza CW** encendida en el sitio lejano (B) y se orienta la Yagi del sitio A escuchándola. El pinger no transmite y lee el nivel unas 6 veces por segundo con 0,5 dB de resolución. Luego se lleva la baliza a A y se repite en B. Para repetidores ajenos, donde no se puede dejar una baliza, se sigue usando el modo TRACE de arriba.
+
+**Hardware** (repo [`ping-ponger-meshcore`](https://github.com/120m4n/ping-ponger-meshcore), rama `exp/analizador-pobre`, desde `firmware/`):
+
+```bash
+pio run -e ProMicro_trace_catcher -t upload       # catcher fw ≥ 0.5.1 (anuncia PingPong-CA-…), o Xiao_nrf52_trace_catcher
+pio run -e Xiao_nrf52_cw_beacon_high -t upload    # baliza low/mid/high = −9/0/14 dBm según la distancia
+```
+
+Guía de la baliza (niveles, LED, frecuencia): [FLASHING.md](https://github.com/120m4n/ping-ponger-meshcore/blob/exp/analizador-pobre/firmware/examples/cw_beacon/FLASHING.md).
+
+**Activar el modo:** *Acerca de → Desarrollador*, cinco toques seguidos en el indicativo. La pantalla principal pasa a ser la de baliza (con sus propios sitios, aparte de los repetidores); la flecha **‹** vuelve a repetidores.
+
+**Paso a paso:**
+
+1. En el mapa de baliza, toca donde está la baliza (sitio B) para crear su **marcador**. La frecuencia viene bloqueada en 914.000 MHz; se edita con dos toques y debe coincidir con la del firmware de la baliza (cambiarla en la app no reprograma la baliza).
+2. Con la Yagi en el sitio A, el teléfono plano sobre el boom y el pinger pegado (el BLE de la Faketec llega a ~1 m), toca **Barrer** → *Conectar catcher PingPong-CA* → **Empezar barrido**. La app mide el piso de ruido a 1 MHz de la baliza y empieza a leer.
+3. Gira la Yagi **despacio** (unos 20°/s) de lado a lado, más allá de donde la señal cae 3 dB, con la misma postura y el brazo fuera del haz. Activa **Tono** si quieres orientar sin mirar: es más agudo cuanto más cerca del máximo.
+4. Cuando la app cruza los dos puntos de −3 dB propone el **rumbo central** (bisección), más preciso que el máximo, que es plano en una Yagi de 3 elementos (±3–5° frente a ±20°). Si falta un lado, dice hacia dónde barrer.
+5. En **Resultado** ves el centro, el ancho del haz medido y la **diferencia con el marcador**. Una diferencia grande puede ser una reflexión o el marcador mal situado: decides tú. La brújula guía hacia el centro estimado o hacia el marcador; fija la Yagi ahí.
+6. **Exportar barrido** guarda un CSV (`meshazimuth_baliza_<sitio>_<fecha>.csv`) con una fila por lectura y la estimación final. Formato: [beacon-sweep-csv.md](specs/005-beacon-aim/contracts/beacon-sweep-csv.md).
+
+| Aviso | Qué hacer |
+|---|---|
+| «No oigo la baliza en … MHz» | Solo llega ruido (≈ −99 dBm): comprueba que la baliza esté encendida (su LED parpadea) y que la frecuencia del sitio sea la de su firmware. |
+| «Señal débil» | Menos de 10 dB sobre el piso: esas lecturas no cuentan. Usa una baliza de más nivel o acércate. |
+| «Demasiado fuerte» | Por encima de −50 dBm el receptor se satura y el máximo se aplana: baliza de menos nivel o más distancia. |
+| «Tráfico ajeno» | Un paquete LoRa cayó en la medida: se descarta sola. |
+| «Brújula imprecisa» | Peor que ±15°: calíbrala; mientras tanto las lecturas no cuentan. |
+
+Sin hardware: con *Depuración → Baliza simulada* activo, el pinger simulado escucha una baliza situada 4° a un lado del marcador. En el simulador de iOS, sin brújula, el rumbo se mueve con el control «Rumbo simulado».
+
 ## Funciones
 
 - **Mapa:** satélite de Apple o teselas OSM con caché pasiva (se gestiona en *Acerca de*). Se guardan varios repetidores con nombre, altitud y prefijo hash; búsqueda, orden por cercanía, importar y exportar JSON.
@@ -131,18 +165,21 @@ Si no ves ese patrón, revisa la calibración del boom, el hash y la polarizaci�
 - **Alineación con histéresis:** entra a ±tolerancia (1–15°, por defecto ±3°) y sale a ±(tolerancia + 2°); vibra 3 s al alinear.
 - **Calibración del boom** y **inclinación** (Core Motion) con «Sube/Baja X°».
 - **Pinger:** conexión BLE, enlace en vivo, lecturas atadas al rumbo, sesiones persistentes y exportación CSV.
+- **Baliza** (modo oculto): sitios propios, medidor a ~6 lecturas/s, gráfico polar, bisección a −3 dB contrastada con el marcador, tono y CSV del barrido.
 
 ## Persistencia entre reinicios
 
 - Se conservan: repetidores y selección, tolerancia, estilo del mapa, la última región vista y la última ubicación (al abrir, azimut y distancia aparecen al instante con la etiqueta «ubicación anterior»).
 - Las **sesiones** del pinger se guardan como JSON en el teléfono (`Application Support/Sessions`).
+- Los **sitios de baliza** se guardan aparte de los repetidores; los barridos viven en memoria y se conservan exportándolos a CSV.
 - Sin red se muestra un aviso. El mapa estándar guarda en caché hasta 500 MB de lo que has visto: recorre la zona con red antes de ir a campo. El satélite requiere conexión.
 
 ## Pruebas y desarrollo
 
 - `⌘U` en Xcode (o `xcodebuild test -scheme MeshAzimuth -destination 'platform=iOS Simulator,name=<simulador>'`): geodesia, parser del protocolo del pinger, reglas de las lecturas y exportación CSV.
-- El parser se valida con los mismos fixtures que el firmware: `tools/sync_fixtures.sh --check` comprueba que la copia local coincide con la del repo MeshCore.
-- Las especificaciones de las tres fases están en [`specs/`](specs/): 001 firmware del pinger, 002 verificación contra el parser upstream, 003 enlace BLE y lecturas.
+- El parser se valida con los mismos fixtures que el firmware: `tools/sync_fixtures.sh --check` comprueba que la copia local coincide con la del repo MeshCore, y `tools/sync_beacon_fixtures.sh --check` la línea `M` del pinger de baliza con la de `ping-ponger-meshcore`.
+- Tests del modo baliza: bisección (incluida la precisión en 100 barridos ruidosos), enlace contra la baliza simulada y CSV del barrido.
+- Las especificaciones están en [`specs/`](specs/): 001 firmware del pinger, 002 verificación contra el parser upstream, 003 enlace BLE y lecturas, 004 app Android, 005 orientar con baliza.
 
 ## Estructura
 
@@ -161,6 +198,11 @@ Si no ves ese patrón, revisa la calibración del boom, el hash y la polarizaci�
 | `Session/SessionModels.swift` | Muestras, lecturas y reglas (inestable, inválida, medianas, pérdida) |
 | `Session/SessionRecorder.swift` | Medición con rumbo al enviar y al recibir |
 | `Session/SessionStore.swift` / `SessionCSV.swift` | Persistencia JSON y exportación CSV |
+| `Beacon/BeaconHomeView.swift` / `BeaconSiteViews.swift` / `BeaconStore.swift` | Modo baliza: mapa, sitios (frecuencia bloqueada) y su persistencia |
+| `Beacon/BeaconSweepView.swift` / `BeaconPolarChart.swift` | Barrido: medidor, polar en vivo, avisos y tono |
+| `Beacon/BeaconResultView.swift` | Resultado: rumbo central, contraste con el marcador y guía |
+| `Beacon/BeaconSession.swift` / `BeaconBisect.swift` | Lecturas con rumbo, piso, validez y bisección a −3 dB |
+| `Beacon/BeaconTone.swift` / `BeaconCSV.swift` | Tono (AVAudioEngine) y CSV del barrido |
 | `RepeaterViews.swift` / `RepeaterStore.swift` | Lista, editor (con prefijo hash) y persistencia de repetidores |
 | `CompassView.swift` / `Haptics.swift` | Brújula con histéresis y vibración sostenida |
 | `LocationManager.swift` / `MotionManager.swift` | GPS, rumbo suavizado y calibración; inclinación del boom |
@@ -171,6 +213,7 @@ Si no ves ese patrón, revisa la calibración del boom, el hash y la polarizaci�
 | `Theme.swift` | Paleta de colores |
 | `PrivacyInfo.xcprivacy` | Manifiesto de privacidad de Apple |
 | `tools/sync_fixtures.sh` | Sincroniza los fixtures de líneas con el repo MeshCore |
+| `tools/sync_beacon_fixtures.sh` | Sincroniza el fixture de la línea `M` con `ping-ponger-meshcore` |
 | `design/` | Logo original y capturas de referencia |
 
 ## Privacidad

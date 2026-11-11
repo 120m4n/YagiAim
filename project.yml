@@ -45,6 +45,10 @@ targets:
       - path: MeshAzimuthTests/Fixtures/lines
         type: folder
         buildPhase: resources
+      # Línea M del pinger proto=2 (tools/sync_beacon_fixtures.sh): el bundle contiene `beacon/` (spec 005).
+      - path: MeshAzimuthTests/Fixtures/beacon
+        type: folder
+        buildPhase: resources
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES   # sin esto Xcode no puede firmar el bundle de tests

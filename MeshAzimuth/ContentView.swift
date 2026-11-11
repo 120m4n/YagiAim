@@ -12,6 +12,8 @@ struct ContentView: View {
     @State private var showList = false
     @State private var showAimer = false
     @State private var showAbout = false
+    /// Modo baliza (spec 005): con él activo la app entera es la de baliza; sin él, la de repetidores.
+    @AppStorage("beacon.enabled") private var beaconEnabled = false
     @AppStorage("onboarding.done") private var onboardingDone = false
     @AppStorage("map.satellite") private var mapStyleSatellite = false
 
@@ -26,6 +28,13 @@ struct ContentView: View {
     }
 
     var body: some View {
+        Group {
+            if beaconEnabled { BeaconHomeView() } else { traceMap }
+        }
+        .onAppear { loc.start() }
+    }
+
+    private var traceMap: some View {
         NavigationStack {
             MapView(
                 repeaters: store.repeaters,
@@ -101,7 +110,6 @@ struct ContentView: View {
                 OnboardingView()
             }
         }
-        .onAppear { loc.start() }
     }
 
     @ViewBuilder private var bottomPanel: some View {

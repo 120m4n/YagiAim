@@ -6,6 +6,14 @@ final class GeoTests: XCTestCase {
     private let cali = CLLocationCoordinate2D(latitude: 3.4516, longitude: -76.5320)
     private let bogota = CLLocationCoordinate2D(latitude: 4.7110, longitude: -74.0721)
 
+    func testUnwrapTakesShortPathAcrossNorthAndSouth() {
+        XCTAssertEqual(Geo.unwrap(previous: 359, new: 1), 361, accuracy: 1e-9)
+        XCTAssertEqual(Geo.unwrap(previous: 361, new: 359), 359, accuracy: 1e-9)
+        XCTAssertEqual(Geo.unwrap(previous: 1, new: 359), -1, accuracy: 1e-9)
+        XCTAssertEqual(Geo.unwrap(previous: 179, new: -179), 181, accuracy: 1e-9)
+        XCTAssertEqual(Geo.unwrap(previous: 0, new: 0), 0, accuracy: 1e-9)
+    }
+
     func testCardinalBearings() {
         let o = CLLocationCoordinate2D(latitude: 0, longitude: 0)
         XCTAssertEqual(Geo.bearing(from: o, to: .init(latitude: 1, longitude: 0)), 0, accuracy: 1e-9)

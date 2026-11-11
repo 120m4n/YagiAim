@@ -10,7 +10,7 @@ final class BLELineTransport: NSObject, LineTransport, @unchecked Sendable {
     static let rxUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")   // central → pinger (comandos)
     static let txUUID = CBUUID(string: "6E400003-B5A3-F393-E0A9-E50E24DCCA9E")   // pinger → central (eventos)
     static let namePrefix = "YagiPinger-"
-    static let lastDeviceKey = "pinger.lastDevice"
+    static let lastDeviceKey = PingerDevice.Kind.yagi.lastDeviceKey
 
     /// Segundos para conectar de punta a punta (SC-001: ≤ 5 s con el pinger a menos de 3 m).
     static let openTimeout = 10.0
@@ -44,18 +44,23 @@ final class BLELineTransport: NSObject, LineTransport, @unchecked Sendable {
     private var openContinuation: CheckedContinuation<Void, Error>?
     private var openTimer: DispatchWorkItem?
     private var outbox: [Data] = []
+    private let kind: PingerDevice.Kind
 
-    /// `deviceID`: periférico concreto (el último usado, por ejemplo). Sin él, conecta al primer `YagiPinger-*`.
-    init(deviceID: UUID? = BLELineTransport.lastDeviceID) {
+    /// `deviceID`: periférico concreto (el último usado, por ejemplo). Sin él, conecta al primero de su tipo
+    /// (`YagiPinger-*`, o `PingPong-CA-*`/`PingPong-PI-*`) que aparezca.
+    init(deviceID: UUID? = BLELineTransport.lastDeviceID, kind: PingerDevice.Kind = .yagi) {
         (lines, lineContinuation) = AsyncStream.makeStream(of: String.self)
         (states, stateContinuation) = AsyncStream.makeStream(of: LinkState.self)
         (devices, deviceContinuation) = AsyncStream.makeStream(of: [PingerDevice].self)
         targetID = deviceID
+        self.kind = kind
         super.init()
     }
 
-    static var lastDeviceID: UUID? {
-        UserDefaults.standard.string(forKey: lastDeviceKey).flatMap(UUID.init(uuidString:))
+    static var lastDeviceID: UUID? { lastDeviceID(for: .yagi) }
+
+    static func lastDeviceID(for kind: PingerDevice.Kind) -> UUID? {
+        UserDefaults.standard.string(forKey: kind.lastDeviceKey).flatMap(UUID.init(uuidString:))
     }
 
     // MARK: - API
@@ -224,7 +229,7 @@ extension BLELineTransport: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, didDiscover p: CBPeripheral,
                         advertisementData: [String: Any], rssi RSSI: NSNumber) {
         let name = (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? p.name ?? ""
-        guard name.hasPrefix(Self.namePrefix) else { return }
+        guard kind.matches(name) else { return }
         found[p.identifier] = PingerDevice(id: p.identifier, name: name)
         peripherals[p.identifier] = p
         deviceContinuation.yield(found.values.sorted { $0.name < $1.name })
@@ -264,7 +269,7 @@ extension BLELineTransport: CBPeripheralDelegate {
     func peripheral(_ p: CBPeripheral, didUpdateNotificationStateFor c: CBCharacteristic, error: Error?) {
         guard c.uuid == Self.txUUID else { return }
         guard error == nil, c.isNotifying else { return failOpen(.writeFailed) }
-        UserDefaults.standard.set(p.identifier.uuidString, forKey: Self.lastDeviceKey)
+        UserDefaults.standard.set(p.identifier.uuidString, forKey: kind.lastDeviceKey)
         assembler = LineAssembler()
         state = .ready
         finishOpen(.success(()))

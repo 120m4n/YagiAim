@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Escanea pingers BLE cercanos (`YagiPinger-*`) para el selector.
+/// Escanea pingers BLE cercanos de un tipo (`YagiPinger-*` o catchers `PingPong-CA-*`) para el selector.
 @MainActor @Observable
 final class PingerScanner {
     private(set) var devices: [PingerDevice] = []
@@ -10,9 +10,9 @@ final class PingerScanner {
     @ObservationIgnored private var transport: BLELineTransport?
     @ObservationIgnored private var tasks: [Task<Void, Never>] = []
 
-    func start() {
+    func start(kind: PingerDevice.Kind) {
         stop()
-        let t = BLELineTransport(deviceID: nil)
+        let t = BLELineTransport(deviceID: nil, kind: kind)
         transport = t
         timedOut = false
         tasks = [
@@ -33,6 +33,7 @@ final class PingerScanner {
 
 /// Lista de pingers cercanos. `onPick(nil)` = pinger simulado (depuración).
 struct PingerPicker: View {
+    var kind: PingerDevice.Kind = .yagi
     let onPick: (PingerDevice?) -> Void
     @State private var scanner = PingerScanner()
     @AppStorage("pinger.simulated") private var simulated = false
@@ -43,8 +44,14 @@ struct PingerPicker: View {
             List {
                 if simulated {
                     Section {
-                        Button { pick(nil) } label: { Label("Pinger simulado", systemImage: "wand.and.stars") }
-                    } footer: { Text("Modo de depuración: genera mediciones sin hardware, según el rumbo y el azimut reales.") }
+                        Button { pick(nil) } label: {
+                            Label(kind == .yagi ? "Pinger simulado" : "Baliza simulada", systemImage: "wand.and.stars")
+                        }
+                    } footer: {
+                        Text(kind == .yagi
+                             ? "Modo de depuración: genera mediciones sin hardware, según el rumbo y el azimut reales."
+                             : "Modo de depuración: simula el catcher PingPong-CA escuchando una baliza CW situada cerca del marcador (a +4°). Sin brújula, el rumbo se mueve con un control.")
+                    }
                 }
 
                 if let error = scanner.state.failure {
@@ -63,7 +70,7 @@ struct PingerPicker: View {
                                 HStack {
                                     Label(d.name, systemImage: "antenna.radiowaves.left.and.right")
                                     Spacer()
-                                    if d.id == BLELineTransport.lastDeviceID { Text("último usado").font(.caption).foregroundStyle(.secondary) }
+                                    if d.id == BLELineTransport.lastDeviceID(for: kind) { Text("último usado").font(.caption).foregroundStyle(.secondary) }
                                 }
                             }
                         }
@@ -71,7 +78,7 @@ struct PingerPicker: View {
                             if scanner.timedOut {
                                 Text("No se encontró ningún pinger. Comprueba que esté encendido y a menos de 2 m.")
                                     .font(.footnote).foregroundStyle(.secondary)
-                                Button("Buscar de nuevo") { scanner.start() }
+                                Button("Buscar de nuevo") { scanner.start(kind: kind) }
                             } else {
                                 HStack(spacing: 12) { ProgressView(); Text("Buscando pingers cercanos…").foregroundStyle(.secondary) }
                             }
@@ -79,11 +86,11 @@ struct PingerPicker: View {
                     } header: { Text("Pingers cercanos") }
                 }
             }
-            .navigationTitle("Conectar pinger")
+            .navigationTitle(kind == .yagi ? "Conectar pinger" : "Conectar pinger de baliza")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } } }
         }
-        .onAppear { scanner.start() }
+        .onAppear { scanner.start(kind: kind) }
         .onDisappear { scanner.stop() }
     }
 

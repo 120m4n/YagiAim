@@ -23,6 +23,7 @@ enum LinkError: Error, Equatable {
     case deviceNotFound
     case connectionLost
     case incompatibleFirmware(proto: Int)
+    case outdatedFirmware(fw: String, minimum: String)
     case timeout
     case writeFailed
 
@@ -33,6 +34,7 @@ enum LinkError: Error, Equatable {
         case .deviceNotFound: "No se encontró el pinger."
         case .connectionLost: "Conexión con el pinger perdida."
         case .incompatibleFirmware(let proto): "Firmware incompatible (proto=\(proto))"
+        case .outdatedFirmware(let fw, let min): "Actualiza el firmware del pinger: tiene \(fw) y hace falta \(min) o posterior."
         case .timeout: "El pinger no responde."
         case .writeFailed: "No se pudo enviar el comando al pinger."
         }
@@ -40,14 +42,28 @@ enum LinkError: Error, Equatable {
 
     /// La pantalla debe ofrecer un botón a Ajustes (nunca un spinner infinito).
     var opensSettings: Bool { self == .bluetoothOff || self == .unauthorized }
+
+    var isOutdatedFirmware: Bool { if case .outdatedFirmware = self { true } else { false } }
 }
 
 /// Pinger descubierto. La identidad es el identificador del periférico (se recuerda el último usado).
 struct PingerDevice: Identifiable, Equatable {
     let id: UUID
-    var name: String        // "YagiPinger-1A2B"
+    var name: String        // "YagiPinger-1A2B" o "PingPong-CA-5E58C8AB"
     var fw: String?         // tras #HELLO
     var proto: Int?
+
+    /// TRACE (`YagiPinger-`, proto=1) o baliza (catcher `PingPong-CA-`, proto=2, spec 005). Cada uno tiene su propio enlace.
+    enum Kind {
+        case yagi, pingPong
+        /// El catcher se llamaba "pinger" (`PingPong-PI-`) hasta ping-ponger-meshcore b5b1f418; las placas
+        /// flasheadas antes lo siguen anunciando hasta reflashearlas.
+        /// `PingPong-<hex>` es la tarjeta única (proto=3, `MODE`): sirve para las dos tarjetas de la app.
+        var namePrefixes: [String] { self == .yagi ? ["YagiPinger-", "PingPong-"] : ["PingPong-"] }
+        func matches(_ name: String) -> Bool { namePrefixes.contains { name.hasPrefix($0) } }
+        var lastDeviceKey: String { self == .yagi ? "pinger.lastDevice" : "beacon.lastDevice" }
+    }
+    var kind: Kind { Kind.pingPong.matches(name) ? .pingPong : .yagi }
 }
 
 /// Canal de líneas `proto=1` con el pinger: BLE NUS en campo, `SimulatedPinger` en tests y demos.

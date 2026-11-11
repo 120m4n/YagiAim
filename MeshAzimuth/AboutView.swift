@@ -7,6 +7,7 @@ struct AboutView: View {
     @State private var confirmClear = false
     @State private var showGuide = false
     @AppStorage("pinger.simulated") private var simulatedPinger = false
+    @AppStorage("beacon.enabled") private var beaconEnabled = false
 
     private var appName: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "MeshAzimuth"
@@ -47,15 +48,27 @@ struct AboutView: View {
                 }
 
                 Section {
-                    Toggle("Pinger simulado", isOn: $simulatedPinger)
+                    Toggle(beaconEnabled ? "Baliza simulada" : "Pinger simulado", isOn: $simulatedPinger)
                 } header: { Text("Depuración") } footer: {
-                    Text("Sustituye al pinger BLE por uno simulado que genera mediciones según tu rumbo y el azimut. Sirve para probar la pantalla sin hardware.")
+                    Text(beaconEnabled
+                         ? "Sustituye al pinger BLE por uno simulado que escucha una baliza CW cerca del marcador. Sirve para probar el barrido y la bisección sin hardware."
+                         : "Sustituye al pinger BLE por uno simulado que genera mediciones según tu rumbo y el azimut. Sirve para probar la pantalla sin hardware.")
                 }
 
-                Section("Desarrollador") {
+                Section {
+                    // 5 toques seguidos en el indicativo activan (o desactivan) el modo baliza (spec 005).
                     LabeledContent("Indicativo", value: "HJ7RMN")
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 5) {
+                            beaconEnabled.toggle()
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        }
                     Link(destination: URL(string: "https://github.com/120m4n")!) {
                         Label("github.com/120m4n", systemImage: "chevron.left.forwardslash.chevron.right")
+                    }
+                } header: { Text("Desarrollador") } footer: {
+                    if beaconEnabled {
+                        Text("Modo baliza activado: la pantalla principal es la de baliza. Cinco toques en el indicativo vuelven a repetidores.")
                     }
                 }
 

@@ -62,8 +62,14 @@ final class PingerLink {
     /// Rumbo y azimut que lee el pinger simulado (la interfaz los actualiza).
     @ObservationIgnored let simInputs: SimInputs
 
+    /// `.yagi`: TRACE con `proto=1` (spec 003). `.pingPong`: baliza con `proto=2` y `MEAS` (spec 005).
+    /// La app tiene un enlace de cada tipo: no comparten estado ni datos.
+    let kind: PingerDevice.Kind
+
     /// `makeTransport` recibe el dispositivo elegido (nil = el último usado / el primero que aparezca).
-    init(simInputs: SimInputs = SimInputs(), makeTransport: @escaping (PingerDevice?) -> LineTransport) {
+    init(kind: PingerDevice.Kind = .yagi, simInputs: SimInputs = SimInputs(),
+         makeTransport: @escaping (PingerDevice?) -> LineTransport) {
+        self.kind = kind
         self.simInputs = simInputs
         self.makeTransport = makeTransport
     }
@@ -78,6 +84,7 @@ final class PingerLink {
         wantConnected = true
         self.device = device
         self.hash = hash
+        freq = nil
         let t = makeTransport(device)
         transport = t
         startReaders(t)
@@ -92,6 +99,7 @@ final class PingerLink {
     func disconnect() {
         wantConnected = false
         stopLive()
+        stopMeter()
         reconnectTask?.cancel(); reconnectTask = nil
         readerTask?.cancel(); readerTask = nil
         statesTask?.cancel(); statesTask = nil
@@ -110,14 +118,32 @@ final class PingerLink {
 
     private func handshake() async throws {
         let hello = try await request("HELLO") { if case .hello = $0 { return true } else { return false } }
-        if case .hello(let fw, let proto, _, _) = hello.event {
+        var proto = 0
+        if case .hello(let fw, let p, _, _) = hello.event {
+            proto = p
             device?.fw = fw; device?.proto = proto
-            guard proto == 1 else { throw LinkError.incompatibleFirmware(proto: proto) }
+            switch kind {
+            case .yagi:
+                guard proto == 1 || proto == 3 else { throw LinkError.incompatibleFirmware(proto: proto) }
+            case .pingPong:
+                // `role` (catcher; pinger en placas antiguas) no se comprueba: el escáner ya filtra por nombre y `.hello` no lo trae.
+                guard proto == 2 || proto == 3 else { throw LinkError.incompatibleFirmware(proto: proto) }
+                guard Self.firmware(fw, atLeast: Self.minBeaconFirmware) else {
+                    throw LinkError.outdatedFirmware(fw: fw, minimum: Self.minBeaconFirmware)
+                }
+            }
         }
-        _ = try await request("STOP") { if case .ok(let t) = $0 { return t == "stop" } else { return false } }
-        _ = try await request("MON off") { if case .ok(let t) = $0 { return t == "mon=off" } else { return false } }
+        if proto == 3 {   // tarjeta única: el modo lo fija la tarjeta de la app y la placa siempre arranca en catcher
+            let mode = kind == .yagi ? "pinger" : "catcher"
+            _ = try await request("MODE \(mode)") { if case .ok(let t) = $0 { return t == "mode=\(mode)" } else { return false } }
+        }
+        if kind == .yagi {   // el catcher (fw ≥ 0.6) solo habla HELLO, CFG?, SET freq y MEAS; no transmite ni monitorea
+            _ = try await request("STOP") { if case .ok(let t) = $0 { return t == "stop" } else { return false } }
+            _ = try await request("MON off") { if case .ok(let t) = $0 { return t == "mon=off" } else { return false } }
+        }
         _ = try await request("CFG?") { if case .cfg = $0 { return true } else { return false } }
         if let hash { try await configure(hash: hash) }
+        if let freq { try await setFrequency(freq) }       // el pinger vuelve a 915.800 al reiniciar
         handshakeDone = true
         state = .ready
     }
@@ -137,6 +163,7 @@ final class PingerLink {
     /// (p. ej. `state busy`) o con `LinkError.timeout` si no responde.
     /// `onSent` se llama justo después de escribir el comando: ahí hay que leer el rumbo (`heading_tx`).
     func ping(onSent: (@MainActor () -> Void)? = nil) async throws -> PingReport {
+        guard kind == .yagi else { throw PingerError.rejected(code: "mode", detail: "baliza") }
         guard isOperational else { throw LinkError.connectionLost }
         let r = try await request("PING", onSent: onSent) { if case .ping = $0 { return true } else { return false } }
         guard case .ping(let result) = r.event else { throw LinkError.writeFailed }
@@ -144,7 +171,7 @@ final class PingerLink {
     }
 
     func startLive() {
-        guard isOperational, !live else { return }
+        guard kind == .yagi, isOperational, !live else { return }
         live = true
         liveTask = Task { [weak self] in await self?.runLive() }
     }
@@ -168,6 +195,68 @@ final class PingerLink {
             }
             let interval = max(Self.minLiveInterval, .milliseconds(Int(config["rate"] ?? "") ?? 0))
             try? await Task.sleep(until: started + interval, clock: .continuous)
+        }
+    }
+
+    // MARK: - Baliza (proto=2, spec 005)
+
+    static let minBeaconFirmware = "0.5.1"
+    /// Lecturas por `MEAS` del medidor: ≈ 70 ms en el pinger (research R-3).
+    static let meterSamples = 32
+
+    private(set) var metering = false
+    /// Última frecuencia aplicada con `setFrequency`; se reaplica tras reconectar.
+    private(set) var freq: String?
+    @ObservationIgnored private var meterTask: Task<Void, Never>?
+    @ObservationIgnored private var meterHandler: (@MainActor (MeasResult) -> Void)?
+    @ObservationIgnored private var resumeMeterAfterReconnect = false
+
+    /// Comparación numérica de versiones ("0.10.0" ≥ "0.5.1").
+    static func firmware(_ fw: String, atLeast min: String) -> Bool {
+        fw.compare(min, options: .numeric) != .orderedAscending
+    }
+
+    /// `SET freq=<MHz>`. No transmite. Con el medidor en marcha falla con `requestInFlight`: pararlo antes.
+    func setFrequency(_ mhz: String) async throws {
+        _ = try await request("SET freq=\(mhz)") { if case .ok(let t) = $0 { return t.hasPrefix("freq=") } else { return false } }
+        freq = mhz
+    }
+
+    /// Un `MEAS n` y su `M,`.
+    func meas(n: Int = PingerLink.meterSamples) async throws -> MeasResult {
+        guard kind == .pingPong else { throw PingerError.rejected(code: "mode", detail: "trace") }
+        guard isOperational else { throw LinkError.connectionLost }
+        let r = try await request("MEAS \(n)") { if case .meas = $0 { return true } else { return false } }
+        guard case .meas(let m) = r.event else { throw LinkError.writeFailed }
+        return m
+    }
+
+    /// Encadena `MEAS 32` sin pausa y entrega cada resultado al recibirlo (ahí se lee el rumbo, research R-4).
+    /// Se detiene al perder el enlace y se retoma tras reconectar, como "En vivo".
+    func startMeter(onReading: @escaping @MainActor (MeasResult) -> Void) {
+        guard kind == .pingPong, isOperational, !metering else { return }
+        metering = true
+        meterHandler = onReading
+        meterTask = Task { [weak self] in await self?.runMeter() }
+    }
+
+    func stopMeter() {
+        metering = false
+        meterTask?.cancel(); meterTask = nil
+    }
+
+    private func runMeter() async {
+        while metering && !Task.isCancelled {
+            do {
+                let m = try await meas()
+                if metering { meterHandler?(m) }
+            } catch PingerError.rejected, PingerError.requestInFlight {
+                // `state busy` u otra petición en curso: siguiente ciclo (la pausa evita girar en vacío)
+                try? await Task.sleep(for: .milliseconds(100))
+            } catch {
+                metering = false     // enlace caído o sin respuesta: la reconexión decide si se retoma
+                return
+            }
         }
     }
 
@@ -256,6 +345,8 @@ final class PingerLink {
             handshakeDone = false
             resumeLiveAfterReconnect = live
             stopLive()
+            resumeMeterAfterReconnect = metering
+            stopMeter()
             waiter?.finish(.failure(LinkError.connectionLost))
             state = .failed(.connectionLost)
             if wantConnected { reconnect() }
@@ -277,9 +368,12 @@ final class PingerLink {
                     try await self.handshake()
                     self.reconnectTask = nil
                     if self.resumeLiveAfterReconnect { self.startLive() }
+                    if self.resumeMeterAfterReconnect, let h = self.meterHandler { self.startMeter(onReading: h) }
                     return
                 } catch LinkError.incompatibleFirmware(let p) {
                     self.fail(LinkError.incompatibleFirmware(proto: p)); return
+                } catch let e as LinkError where e.isOutdatedFirmware {
+                    self.fail(e); return
                 } catch {
                     delay = min(delay * 2, 4)
                 }

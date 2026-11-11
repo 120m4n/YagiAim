@@ -4,6 +4,7 @@ import SwiftUI
 struct MeshAzimuthApp: App {
     @State private var location = LocationManager()
     @State private var store = RepeaterStore()
+    @State private var beaconStore = BeaconStore()     // modo baliza (spec 005): datos propios
     @State private var motion = MotionManager()
     @State private var link: PingerLink
     @State private var recorder = SessionRecorder()
@@ -24,6 +25,7 @@ struct MeshAzimuthApp: App {
             ContentView()
                 .environment(location)
                 .environment(store)
+                .environment(beaconStore)
                 .environment(motion)
                 .environment(link)
                 .environment(recorder)

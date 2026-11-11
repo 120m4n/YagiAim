@@ -39,6 +39,12 @@ enum Geo {
         return d
     }
 
+    /// Valor "desenrollado": `new` llevado al equivalente más cercano a `previous` (puede salirse de 0–360),
+    /// para animar rotaciones por el camino corto al cruzar 360°/0°.
+    static func unwrap(previous: Double, new: Double) -> Double {
+        previous + signedDelta(target: new, current: previous)
+    }
+
     /// Histéresis: entra a ±tolerancia y solo sale a ±(tolerancia + margen), para que
     /// el verde y la vibración no parpadeen cuando el rumbo oscila en el borde.
     static func isAligned(delta: Double?, tolerance: Double, wasAligned: Bool, exitMargin: Double = 2) -> Bool {
