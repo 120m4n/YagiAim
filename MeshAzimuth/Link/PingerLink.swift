@@ -131,8 +131,10 @@ final class PingerLink {
                 }
             }
         }
-        _ = try await request("STOP") { if case .ok(let t) = $0 { return t == "stop" } else { return false } }
-        _ = try await request("MON off") { if case .ok(let t) = $0 { return t == "mon=off" } else { return false } }
+        if kind == .yagi {   // el catcher (fw ≥ 0.6) solo habla HELLO, CFG?, SET freq y MEAS; no transmite ni monitorea
+            _ = try await request("STOP") { if case .ok(let t) = $0 { return t == "stop" } else { return false } }
+            _ = try await request("MON off") { if case .ok(let t) = $0 { return t == "mon=off" } else { return false } }
+        }
         _ = try await request("CFG?") { if case .cfg = $0 { return true } else { return false } }
         if let hash { try await configure(hash: hash) }
         if let freq { try await setFrequency(freq) }       // el pinger vuelve a 915.800 al reiniciar
