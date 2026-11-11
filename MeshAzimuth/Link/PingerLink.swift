@@ -118,18 +118,24 @@ final class PingerLink {
 
     private func handshake() async throws {
         let hello = try await request("HELLO") { if case .hello = $0 { return true } else { return false } }
-        if case .hello(let fw, let proto, _, _) = hello.event {
+        var proto = 0
+        if case .hello(let fw, let p, _, _) = hello.event {
+            proto = p
             device?.fw = fw; device?.proto = proto
             switch kind {
             case .yagi:
-                guard proto == 1 else { throw LinkError.incompatibleFirmware(proto: proto) }
+                guard proto == 1 || proto == 3 else { throw LinkError.incompatibleFirmware(proto: proto) }
             case .pingPong:
                 // `role` (catcher; pinger en placas antiguas) no se comprueba: el escáner ya filtra por nombre y `.hello` no lo trae.
-                guard proto == 2 else { throw LinkError.incompatibleFirmware(proto: proto) }
+                guard proto == 2 || proto == 3 else { throw LinkError.incompatibleFirmware(proto: proto) }
                 guard Self.firmware(fw, atLeast: Self.minBeaconFirmware) else {
                     throw LinkError.outdatedFirmware(fw: fw, minimum: Self.minBeaconFirmware)
                 }
             }
+        }
+        if proto == 3 {   // tarjeta única: el modo lo fija la tarjeta de la app y la placa siempre arranca en catcher
+            let mode = kind == .yagi ? "pinger" : "catcher"
+            _ = try await request("MODE \(mode)") { if case .ok(let t) = $0 { return t == "mode=\(mode)" } else { return false } }
         }
         if kind == .yagi {   // el catcher (fw ≥ 0.6) solo habla HELLO, CFG?, SET freq y MEAS; no transmite ni monitorea
             _ = try await request("STOP") { if case .ok(let t) = $0 { return t == "stop" } else { return false } }

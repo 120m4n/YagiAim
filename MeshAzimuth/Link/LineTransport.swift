@@ -58,7 +58,8 @@ struct PingerDevice: Identifiable, Equatable {
         case yagi, pingPong
         /// El catcher se llamaba "pinger" (`PingPong-PI-`) hasta ping-ponger-meshcore b5b1f418; las placas
         /// flasheadas antes lo siguen anunciando hasta reflashearlas.
-        var namePrefixes: [String] { self == .yagi ? ["YagiPinger-"] : ["PingPong-CA-", "PingPong-PI-"] }
+        /// `PingPong-<hex>` es la tarjeta única (proto=3, `MODE`): sirve para las dos tarjetas de la app.
+        var namePrefixes: [String] { self == .yagi ? ["YagiPinger-", "PingPong-"] : ["PingPong-"] }
         func matches(_ name: String) -> Bool { namePrefixes.contains { name.hasPrefix($0) } }
         var lastDeviceKey: String { self == .yagi ? "pinger.lastDevice" : "beacon.lastDevice" }
     }
